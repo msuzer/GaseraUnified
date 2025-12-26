@@ -1,5 +1,5 @@
 # composition/mux.py
-from gasera.acquisition_engine import AcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
 from motion.mux_motion import MuxMotion
 from mux.mux_gpio import GPIOMux
 from mux.mux_vici_uma import ViciUMAMux

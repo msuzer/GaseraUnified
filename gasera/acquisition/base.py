@@ -111,14 +111,17 @@ class BaseAcquisitionEngine(ABC):
 
     def _blocking_wait(self, duration: float, notify: bool = True) -> bool:
         end_time = time.monotonic() + duration
+        base_interval = 0.5 if duration < 10 else 1.0
         while True:
             if self._stop_event.is_set():
                 return False
-            if time.monotonic() >= end_time:
+            now = time.monotonic()
+            remaining = end_time - now
+            if remaining <= 0:
                 break
             if notify:
                 self._notify()
-            time.sleep(0.5)
+            time.sleep(min(base_interval, remaining))
         return True
 
     def _set_phase(self, phase: str):
@@ -138,6 +141,16 @@ class BaseAcquisitionEngine(ABC):
                 cb(self.progress)
             except Exception as e:
                 warn(f"[ENGINE] notify error: {e}")
+
+    def on_live_data(self, live_data):
+        """Process live data. Returns True if data was new (not duplicate), False otherwise."""
+        if not live_data or not live_data.get("components"):
+            return False
+
+        if self.logger:
+            return self.logger.write_measurement(live_data)
+        
+        return True
 
     # ---------------- Gasera helpers ----------------
 
@@ -164,9 +177,10 @@ class BaseAcquisitionEngine(ABC):
         return ok
 
     def _finalize_run(self):
-        self._set_phase(Phase.IDLE)
-        buzzer.play("completed")
+        # Generic cleanup only. Specializations decide phase/buzzer/gasera stop policy.
         if self.logger:
-            self.logger.close()
-            self.logger = None
+            try:
+                self.logger.close()
+            finally:
+                self.logger = None
         self._start_timestamp = None

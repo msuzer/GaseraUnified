@@ -222,6 +222,38 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         if not self._blocking_wait(SWITCHING_SETTLE_TIME, notify=True):
             return False
         return True
+    
+    def _set_phase(self, phase: str):
+        with self._lock:
+            if self.progress.phase == phase and self._last_notified_vch == self.progress.current_channel:
+                return
+            self.progress.phase = phase
+            self._last_notified_vch = self.progress.current_channel
+
+        info(f"[ENGINE] phase -> {phase}")
+        self._notify()
+
+    def _finalize_run(self):
+        if self._stop_event.is_set():
+            self._stop_event.clear()
+            self._set_phase(Phase.ABORTED)
+            buzzer.play("cancel")
+        else:
+            self._set_phase(Phase.IDLE)
+            buzzer.play("completed")
+            info("[ENGINE] Measurement run complete")
+
+        # IMPORTANT: stop gasera if still running
+        if not self.check_gasera_idle():
+            if not self._stop_measurement():
+                warn("[ENGINE] Failed to stop Gasera during finalization")
+
+        if self.logger:
+            self.logger.close()
+            self.logger = None
+
+        self._start_timestamp = None
+        self.progress.tt_seconds = None
 
     def _update_progress_mux(self, rep: int, processed: int, overall_steps: int):
         self.progress.percent = round((processed / self.progress.enabled_count) * 100)
