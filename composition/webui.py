@@ -1,5 +1,5 @@
 # composition/webui.py
-from gasera.acquisition_engine import AcquisitionEngine
+from gasera.acquisition.motor import MotorAcquisitionEngine as AcquisitionEngine
 from motion.motor_motion import MotorMotion
 from motor.bank import MotorBank
 from motor.button_monitor import MotorButtonMonitor
