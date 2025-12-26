@@ -1,10 +1,10 @@
 # composition/webui.py
 from gasera.acquisition.motor import MotorAcquisitionEngine as AcquisitionEngine
-from motion.motor_motion import MotorMotion
 from motor.bank import MotorBank
 from motor.button_monitor import MotorButtonMonitor
 from motor.gpio_motor import GPIOMotor
 from motor.motor_control import MotorController
+from motion.profiles.motor import build_motion
 from system import services
 
 from gpio.pin_assignments import (
@@ -34,5 +34,6 @@ def build_engine():
     )
     button_monitor.start()
 
-    motion = MotorMotion(motors)
+    motion = build_motion(motors=motors)
+
     return AcquisitionEngine(motion)

@@ -1,10 +1,9 @@
 # composition/mux.py
 from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
-from gasera.acquisition.base import Progress, Phase
-from motion.mux_motion import MuxMotion
 from mux.mux_gpio import GPIOMux
 from mux.mux_vici_uma import ViciUMAMux
 from mux.cascaded_mux import CascadedMux
+from motion.profiles.mux import build_motion
 from gpio.pin_assignments import OC1_PIN, OC2_PIN, OC4_PIN, OC5_PIN
 
 def build_engine():
@@ -21,5 +20,6 @@ def build_engine():
         ViciUMAMux(serial_port2),
     )
 
-    motion = MuxMotion(cmux_gpio=cmux_gpio, cmux_serial=cmux_serial)
+    motion = build_motion(cmux_gpio=cmux_gpio, cmux_serial=cmux_serial)
+
     return AcquisitionEngine(motion)
