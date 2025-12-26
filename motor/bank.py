@@ -5,3 +5,15 @@ class MotorBank:
 
     def get(self, motor_id: str):
         return self._motors[motor_id]
+
+    def __getitem__(self, motor_id):
+        return self._motors[motor_id]
+
+    def items(self):
+        return self._motors.items()
+
+    def values(self):
+        return self._motors.values()
+
+    def keys(self):
+        return self._motors.keys()

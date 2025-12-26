@@ -69,12 +69,13 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
             return True, "Measurement Task started"
 
-    def trigger_repeat(self) -> bool:
+    def trigger_repeat(self) -> tuple[bool, str]:
         if self._repeat_event.is_set():
-            info("[ENGINE] trigger_repeat called but repeat already in progress")
-            return False
+            debug("[ENGINE] Repeat already in progress")
+            return False, "repeat already in progress"
+
         self._repeat_event.set()
-        return True
+        return True, "repeat triggered"
 
     # ---------------- Template hooks ----------------
 

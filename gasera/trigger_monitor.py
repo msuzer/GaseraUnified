@@ -1,6 +1,6 @@
 import time
 import threading
-from gasera.acquisition_engine import AcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
 from system.log_utils import verbose, info, warn, debug
 from gpio.gpio_control import gpio
 from gpio.pin_assignments import TRIGGER_PIN

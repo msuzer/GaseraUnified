@@ -8,7 +8,8 @@ from typing import Optional
 from .log_utils import debug, warn
 from .display_driver import DisplayDriver
 from gasera.device_status_service import get_latest_gasera_status
-from gasera.acquisition_engine import Progress, Phase, AcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
+from gasera.acquisition.base import Progress, Phase
 
 display = DisplayDriver()
 

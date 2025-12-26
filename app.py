@@ -5,6 +5,8 @@ from pathlib import Path
 from device.device_init import init_device
 init_device()
 
+from composition import engine
+
 from system.log_utils import debug
 from gasera.tcp_client import init_tcp_client
 from system.preferences import prefs, KEY_SIMULATOR_ENABLED

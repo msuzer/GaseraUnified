@@ -6,7 +6,8 @@ from typing import Dict, Any, Tuple
 
 from system.log_utils import debug, warn, error
 from gasera.controller import gasera
-from gasera.acquisition_engine import AcquisitionEngine, Progress, Phase
+from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
+from gasera.acquisition.base import Progress, Phase
 
 # High-frequency data snapshots (progress + live measurements)
 latest_progress_snapshot: Dict[str, Any] = {"phase": Phase.IDLE, "current_channel": 0, "repeat_index": 0}

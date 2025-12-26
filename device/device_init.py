@@ -14,3 +14,6 @@ def init_device():
 
     else:
         raise RuntimeError(f"Unsupported device: {DEVICE}")
+
+    from gpio.pin_assignments import BUZZER_PIN
+    info(f"[DEVICE] BUZZER_PIN resolved to {BUZZER_PIN}")

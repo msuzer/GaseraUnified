@@ -106,6 +106,14 @@ class BaseAcquisitionEngine(ABC):
     @abstractmethod
     def _after_repeat(self, rep: int) -> bool:
         ...
+        
+    def trigger_repeat(self):
+        """
+        Optional capability.
+        Default: not supported.
+        """
+        info("[ENGINE] trigger_repeat called but not supported")
+        return False, "repeat not supported"
 
     # ---------------- Shared helpers ----------------
 

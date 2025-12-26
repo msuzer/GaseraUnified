@@ -16,11 +16,8 @@ class GPIOMotor:
     def __init__(self, pin_cw, pin_ccw, *, settle_ms=50):
         self.pin_cw = pin_cw
         self.pin_ccw = pin_ccw
-        self._moving = False
         self.settle = settle_ms / 1000
-
-        gpio.reset(self.pin_cw)
-        gpio.reset(self.pin_ccw)
+        self._stop_pins()
 
     @property
     def is_moving(self) -> bool:

@@ -150,7 +150,7 @@ class Preferences:
         if key in self._callbacks:
             for cb in self._callbacks[key]:
                 try:
-                    cb(value)
+                    cb(key, value)
                 except Exception as e:
                     print(f"[WARN] Callback for '{key}' failed: {e}")
 
