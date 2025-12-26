@@ -37,7 +37,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._repeat_event = threading.Event()
         self.cfg: Optional[TaskConfig] = None
 
-        # WebUI semantics: always 2 motors
+        # MOTOR semantics: always 2 motors
         self.progress.enabled_count = 2
 
     # ---------------- Public API ----------------
@@ -118,7 +118,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._repeat_event.clear()
         return self._stop_measurement()
 
-    # ---------------- WebUI specifics ----------------
+    # ---------------- MOTOR specifics ----------------
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
         self.cfg = TaskConfig(

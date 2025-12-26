@@ -8,9 +8,9 @@ def init_device():
         select_profile("optocoupler_board")
         info("[DEVICE] Initialized MUX hardware profile")
 
-    elif DEVICE == Device.WEBUI:
+    elif DEVICE == Device.MOTOR:
         select_profile("relay_board")
-        info("[DEVICE] Initialized WebUI hardware profile")
+        info("[DEVICE] Initialized MOTOR hardware profile")
 
     else:
         raise RuntimeError(f"Unsupported device: {DEVICE}")

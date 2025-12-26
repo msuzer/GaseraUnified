@@ -3,8 +3,8 @@ from enum import Enum
 
 class Device(Enum):
     MUX = "mux"
-    WEBUI = "webui"
+    MOTOR = "motor"
 
 # CHANGE THIS PER TARGET
 DEVICE = Device.MUX
-# DEVICE = Device.WEBUI
+# DEVICE = Device.MOTOR
