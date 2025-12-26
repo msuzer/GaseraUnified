@@ -60,6 +60,27 @@ detect_active_display_manager() {
 }
 
 # --------------------------------------------------------------
+# Function to set device profile
+# --------------------------------------------------------------
+set_device_profile() {
+  local DEVICE_CHOICE="$1"
+  local PROFILE_FILE="$APP_DIR/device/device_profile.py"
+  local TEMPLATE_FILE="$APP_DIR/device/device_profile.py.template"
+
+  if [[ ! "$DEVICE_CHOICE" =~ ^(MUX|MOTOR)$ ]]; then
+    echo "❌ Invalid DEVICE: $DEVICE_CHOICE (must be MUX or MOTOR)"
+    exit 1
+  fi
+
+  echo "🔧 Setting DEVICE profile to $DEVICE_CHOICE"
+
+  sed "s/@DEVICE@/$DEVICE_CHOICE/" "$TEMPLATE_FILE" > "$PROFILE_FILE"
+
+  chown "$USER:$USER" "$PROFILE_FILE"
+  chmod 644 "$PROFILE_FILE"
+}
+
+# --------------------------------------------------------------
 # Start deployment
 # --------------------------------------------------------------
 echo "🚀 Deploying GaseraMux (branch: $BRANCH)..."
@@ -159,6 +180,26 @@ if timedatectl | grep -q "NTP service"; then
 fi
 
 # --------------------------------------------------------------
+# 2.1. Select device profile
+# --------------------------------------------------------------
+echo
+echo "--------------------------------------------------------------"
+echo "Select device profile for this installation"
+echo "  1) MUX     (GaseraMux hardware)"
+echo "  2) MOTOR   (Motor hardware)"
+echo "--------------------------------------------------------------"
+read -r -p "Enter choice [1/2]: " ans_dev
+
+case "$ans_dev" in
+  1) DEVICE_CHOICE="MUX" ;;
+  2) DEVICE_CHOICE="MOTOR" ;;
+  *)
+    echo "❌ Invalid choice"
+    exit 1
+    ;;
+esac
+
+# --------------------------------------------------------------
 # 3. Clone/pull GaseraMux repo
 # --------------------------------------------------------------
 echo "[3/12] 📥 Cloning GaseraMux repository..."
@@ -171,6 +212,8 @@ else
   git -C "$APP_DIR" fetch origin "$BRANCH"
   git -C "$APP_DIR" reset --hard "origin/$BRANCH"
 fi
+
+set_device_profile "$DEVICE_CHOICE"
 
 # --------------------------------------------------------------
 # 4a. App directory & permissions

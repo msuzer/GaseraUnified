@@ -53,6 +53,10 @@ instance/
 # User preferences (device-specific)
 config/user_prefs.json
 
+# Device profile configuration
+# Generated from device/device_profile.py.template
+device/device_profile.py
+
 # Auto-generated build/version metadata
 version_info.sh
 last_version.txt

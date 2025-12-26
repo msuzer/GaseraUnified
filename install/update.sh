@@ -13,6 +13,30 @@ APP_DIR="/opt/GaseraMux"
 SERVICE_NAME="gasera.service"
 USER="www-data"
 
+# --------------------------------------------------------------
+# Function to set device profile
+# --------------------------------------------------------------
+set_device_profile() {
+  local DEVICE_CHOICE="$1"
+  local PROFILE_FILE="$APP_DIR/device/device_profile.py"
+  local TEMPLATE_FILE="$APP_DIR/device/device_profile.py.template"
+
+  if [[ ! "$DEVICE_CHOICE" =~ ^(MUX|MOTOR)$ ]]; then
+    echo "❌ Invalid DEVICE: $DEVICE_CHOICE (must be MUX or MOTOR)"
+    exit 1
+  fi
+
+  echo "🔧 Setting DEVICE profile to $DEVICE_CHOICE"
+
+  sed "s/@DEVICE@/$DEVICE_CHOICE/" "$TEMPLATE_FILE" > "$PROFILE_FILE"
+
+  chown "$USER:$USER" "$PROFILE_FILE"
+  chmod 644 "$PROFILE_FILE"
+}
+
+# --------------------------------------------------------------
+# Determine branch to update
+# --------------------------------------------------------------
 # If branch is passed as argument, use it; otherwise default to 'main' when repo is absent
 if [ -n "${1:-}" ]; then
   BRANCH="$1"
@@ -37,6 +61,17 @@ fi
 if [ ! -d "$APP_DIR/.git" ]; then
     echo "❌ $APP_DIR is not a Git repository."
     exit 1
+fi
+
+# Preserve existing device profile choice
+DEVICE_FILE="$APP_DIR/device/device_profile.py"
+
+if [ -f "$DEVICE_FILE" ]; then
+  echo "🔒 Preserving existing device profile"
+  DEVICE_CHOICE=$(grep -Eo 'Device\.(MUX|MOTOR)' "$DEVICE_FILE" | cut -d. -f2)
+else
+  echo "⚠️ No device_profile.py found, defaulting to MUX"
+  DEVICE_CHOICE="MUX"
 fi
 
 # --------------------------------------------------------------
@@ -72,6 +107,8 @@ runuser -u "$USER" -- git -C "$APP_DIR" checkout -B "$BRANCH" "origin/$BRANCH"
 runuser -u "$USER" -- git -C "$APP_DIR" reset --hard "origin/$BRANCH"
 
 echo "✨ Repository updated to origin/$BRANCH"
+
+set_device_profile "$DEVICE_CHOICE"
 
 # --------------------------------------------------------------
 # 3. Ensure user_prefs.json exists
