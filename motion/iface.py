@@ -1,0 +1,6 @@
+# motion/iface.py
+from typing import Protocol
+
+class MotionInterface(Protocol):
+    def home(self) -> None: ...
+    def step(self, unit_id: str | None = None) -> None: ...
