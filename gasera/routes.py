@@ -5,7 +5,7 @@ from system.log_utils import verbose, debug, info, warn, error
 from gasera.trigger_monitor import TriggerMonitor
 from gasera import gas_info
 from gasera.sse_utils import SseDeltaTracker
-from gasera.composition import engine
+from composition import engine
 
 from gasera.live_status_service import (
     init as live_attach,
