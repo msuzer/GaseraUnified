@@ -12,7 +12,7 @@ window.collectPrefsData = function () {
     measurement_duration: +measureInput.value,
     pause_seconds: +pauseInput.value,
     repeat_count: +repeatInput.value,
-    motor_timeout_sec: +motorTimeoutInput.value,
+    motor_timeout: +motorTimeoutInput.value,
     include_channels: window.getJarMask?.() ?? [],
     online_mode_enabled: onlineModeToggle?.checked ?? true,
   };
@@ -28,7 +28,7 @@ function loadPreferences() {
       measureInput.value = p.measurement_duration ?? 300;
       pauseInput.value = p.pause_seconds ?? 5;
       repeatInput.value = p.repeat_count ?? 1;
-      motorTimeoutInput.value = p.motor_timeout_sec ?? 10;
+      motorTimeoutInput.value = p.motor_timeout ?? 10;
       buzzerToggle.checked = p.buzzer_enabled ?? true;
       if (onlineModeToggle) {
         onlineModeToggle.checked = p.online_mode_enabled ?? true;

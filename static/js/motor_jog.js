@@ -127,6 +127,8 @@ function hide(id) {
 }
 
 function onMotorServiceAvailable() {
+  window.UI_CAPS.motor = true;
+  window.UI_CAPS.mux = false;
   show("motor-jog-card");          // actuator
   show("motor-timeout-block");     // actuator
   show("btnRepeat");               // actuator
@@ -136,6 +138,8 @@ function onMotorServiceAvailable() {
 }
 
 function onMotorServiceUnavailable() {
+  window.UI_CAPS.motor = false;
+  window.UI_CAPS.mux = true;
   hide("motor-jog-card");
   hide("motor-timeout-block");
   hide("btnRepeat");

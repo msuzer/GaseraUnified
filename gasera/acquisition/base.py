@@ -228,8 +228,8 @@ class BaseAcquisitionEngine(ABC):
                 except Exception:
                     pass
                 self.logger = None
-            self._start_timestamp = None
-            self.progress.tt_seconds = None
+            # self._start_timestamp = None
+            # self.progress.tt_seconds = None
 
     # -----------------------------
     # Shared helpers
