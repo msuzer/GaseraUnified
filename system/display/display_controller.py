@@ -57,3 +57,18 @@ class DisplayController:
         while len(lines) < 4:
             lines.append("")
         self.driver.draw_text_lines(lines[:4])
+
+    def update_content(self, state: DisplayState):
+        if not self.current:
+            return
+
+        updated = DisplayState(
+            screen=self.current.screen,
+            header=state.header,
+            lines=state.lines,
+            ttl_seconds=self.current.ttl_seconds,
+            return_to=self.current.return_to,
+        )
+
+        self.current = updated
+        self._render(updated)

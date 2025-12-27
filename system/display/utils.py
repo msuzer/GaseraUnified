@@ -1,3 +1,4 @@
+from datetime import datetime
 import socket
 import subprocess
 
@@ -25,6 +26,9 @@ def get_gasera_status():
         return "Online" if online else "Offline"
     
     return "Checking"
+
+def get_formatted_timestamp():
+    return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 def format_duration(seconds, fixed=False):
     """Format seconds as duration.
