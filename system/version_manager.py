@@ -1,8 +1,7 @@
-import os, re, json, shlex, subprocess, time
+import re, shlex, subprocess, time
 from pathlib import Path
 
 from system import services
-from system.display.display_state import DisplayState
 from .log_utils import debug, info, warn, error
 
 APP_DIR = Path("/opt/GaseraMux")
@@ -82,15 +81,9 @@ def _restart_service(reason: str = ""):
 
         buzzer.play("service_restart")
         services.display_controller.show(
-            DisplayState(
-                mode="info",
-                title="Restarting Service...",
-                subtitle=time.strftime("%H:%M:%S"),
-                ttl_seconds=2,
-                return_to="idle",
-            )
+            services.display_adapter.info("Version Manager:", "Restarting Service...")
         )
-        
+
     except Exception as e:
         warn(f"[version_manager] UX feedback failed: {e}")
 

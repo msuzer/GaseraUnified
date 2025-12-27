@@ -2,20 +2,23 @@ from flask import Flask, render_template
 import sys
 from pathlib import Path
 
+from device.device_init import init_device, init_display_stack
+init_device()
+
+from composition import engine
+
+from system import services
+from system.log_utils import debug
+from gasera.tcp_client import init_tcp_client
+from system.preferences import prefs, KEY_SIMULATOR_ENABLED
+
 BASE_DIR = Path(__file__).resolve().parent
 VENDOR_DIR = BASE_DIR / "vendor"
 
 if VENDOR_DIR.exists():
     sys.path.insert(0, str(VENDOR_DIR))
 
-from device.device_init import init_device
-init_device()
-
-from system import services
-from system.display.display_state import DisplayState
-from system.log_utils import debug
-from gasera.tcp_client import init_tcp_client
-from system.preferences import prefs, KEY_SIMULATOR_ENABLED
+init_display_stack()
 
 DEFAULT_GASERA_IP = "192.168.0.100"
 
@@ -50,13 +53,7 @@ from device.device_init import start_display_thread
 start_display_thread()
 
 services.display_controller.show(
-    DisplayState(
-        mode="info",
-        title="GASERA",
-        subtitle="System Ready",
-        ttl_seconds=2,
-        return_to="idle",
-    )
+    services.display_adapter.info("App Startup", "Initializing...")
 )
 
 @app.route('/')

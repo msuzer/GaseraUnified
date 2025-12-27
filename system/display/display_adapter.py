@@ -1,141 +1,163 @@
 # system/display_adapter.py
 
-from typing import Optional
+from datetime import datetime
 
 from gasera.acquisition.base import Progress
-from system.display.display_state import DisplayState, DisplayMode
-
+from system.display.display_state import DisplayState
+from system.display.display_controller import DisplayController
+from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine
+from gasera.acquisition.motor import MotorAcquisitionEngine
+from system.display.utils import format_duration, format_consistent_pair, get_ip_address, get_wifi_ssid, get_gasera_status
 
 class DisplayAdapter:
     """
     Converts Progress snapshots into DisplayState.
     ALL semantics live here.
     """
+    def __init__(self, controller: DisplayController):
+        self._controller = controller
+        self._engine = None
 
-    from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
-    
     def attach_engine(self, engine: AcquisitionEngine):
-        engine.subscribe(self.from_progress)
+        self._engine = engine
+        self._engine.subscribe(self.from_progress)
 
-    def from_progress(
-        self,
-        p: Progress,
-        engine_kind: str,   # "mux" | "motor"
-    ) -> DisplayState:
-        if engine_kind == "motor":
-            return self._motor_state(p)
+    def from_progress(self, p: Progress) -> DisplayState:
+        if isinstance(self._engine, MotorAcquisitionEngine):
+            state = self._motor_state(p)
+        elif isinstance(self._engine, MuxAcquisitionEngine):
+            state = self._mux_state(p)
         else:
-            return self._mux_state(p)
+            # Defensive fallback
+            state = DisplayState(
+                screen="error",
+                header="DISPLAY ERROR",
+                lines=["Unknown engine type"],
+                ttl_seconds=5,
+                return_to="idle",
+            )
+
+        self._controller.show(state)
+        return state
 
     # ------------------------------------------------------------------
     # Motor mapping
     # ------------------------------------------------------------------
     def _motor_state(self, p: Progress) -> DisplayState:
-        """
-        Motor semantics (locked):
-        - elapsed_seconds / tt_seconds → cycle ET/TT while running
-        - at end task / abort → summary snapshot already swapped in backend
-        """
+        ip = get_ip_address()
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-        # Error / abort → summary screen
         if p.phase == "ABORTED":
             return DisplayState(
-                mode="error",
-                title="TASK ENDED",
-                subtitle="Aborted by user",
-                et_seconds=p.elapsed_seconds,
-                tt_seconds=p.tt_seconds,
-                ttl_seconds=6,
+                screen="error",
+                header="TASK ENDED",
+                lines=[
+                    "Aborted by user",
+                    f"D: {format_duration(p.elapsed_seconds)}",
+                    f"T: {now}",
+                ],
+                ttl_seconds=10,
                 return_to="idle",
             )
 
-        # Armed (engine started, waiting for trigger)
         if p.phase == "IDLE" and p.tt_seconds:
             return DisplayState(
-                mode="armed",
-                title="READY",
-                subtitle="Awaiting trigger",
-                et_seconds=0.0,
-                tt_seconds=p.tt_seconds,
+                screen="armed",
+                header="READY",
+                lines=[
+                    "Awaiting trigger",
+                    f"D: 00:00/{format_duration(p.tt_seconds)}",
+                    f"IP: {ip}",
+                ],
             )
 
-        # Running cycle
         if p.phase != "IDLE":
-            step_total = p.total_steps or None
-            step_current = None
-            if step_total:
-                # step_index is monotonic; display per-cycle step
-                step_current = (p.step_index % step_total) + 1
+            step = None
+            if p.total_steps:
+                step = (p.step_index % p.total_steps) + 1
+
+            et_str, tt_str = format_consistent_pair(p.elapsed_seconds, p.tt_seconds)
+            lines = [
+                f"Ch{p.current_channel + 1} Step {step}/{p.total_steps}",
+                f"D: {et_str}/{tt_str}",
+                f"IP: {ip}",
+            ]
 
             return DisplayState(
-                mode="running",
-                title="MEASURING",
-                subtitle=self._motor_subtitle(p),
-                et_seconds=p.elapsed_seconds,
-                tt_seconds=p.tt_seconds,
-                step_current=step_current,
-                step_total=step_total,
+                screen="running",
+                header=f"> {p.phase}",
+                lines=lines,
             )
 
-        # Idle and engine not started yet
+        wifi = get_wifi_ssid()
+        gasera = get_gasera_status()
         return DisplayState(
-            mode="idle",
-            title="READY",
-            subtitle="Press Start",
+            screen="idle",
+            header=f"W: {wifi}",
+            lines=[f"IP: {ip}", f"G: Gasera {gasera}", f"T: {now}"],
         )
 
-    def _motor_subtitle(self, p: Progress) -> Optional[str]:
-        if p.enabled_count and p.enabled_count > 1:
-            return f"Actuator {p.current_channel + 1} / {p.enabled_count}"
-        return "Actuator"
-
     # ------------------------------------------------------------------
-    # MUX mapping
+    # Mux mapping
     # ------------------------------------------------------------------
     def _mux_state(self, p: Progress) -> DisplayState:
-        """
-        MUX semantics:
-        - elapsed_seconds / tt_seconds always global
-        - IDLE after run = done
-        """
+        ip = get_ip_address()
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        et_str, tt_str = format_consistent_pair(p.elapsed_seconds, p.tt_seconds)
 
-        # Error / abort
         if p.phase == "ABORTED":
             return DisplayState(
-                mode="error",
-                title="MEASUREMENT ABORTED",
-                et_seconds=p.elapsed_seconds,
-                tt_seconds=p.tt_seconds,
-                ttl_seconds=6,
+                screen="error",
+                header="MEASUREMENT ABORTED",
+                lines=[
+                    f"D: {et_str}/{tt_str}",
+                    f"T: {now}",
+                ],
+                ttl_seconds=10,
                 return_to="idle",
             )
 
-        # Done (IDLE after deterministic run)
         if p.phase == "IDLE" and p.tt_seconds:
+            completed_steps = p.step_index if p.step_index else 0
+            steps_display = f"{completed_steps}"
+            if p.total_steps and p.total_steps > 0:
+                steps_display += f"/{p.total_steps}"
             return DisplayState(
-                mode="done",
-                title="MEASUREMENT DONE",
-                subtitle="Completed",
-                et_seconds=p.elapsed_seconds,
-                tt_seconds=p.tt_seconds,
-                ttl_seconds=5,
+                screen="summary",
+                header="MEASUREMENT DONE",
+                lines=[
+                    f"Done: {steps_display} steps",
+                    f"D: {et_str}/{tt_str}",
+                    f"T: {now}",
+                ],
+                ttl_seconds=10,
                 return_to="idle",
             )
 
-        # Running
-        step_current = p.step_index + 1 if p.total_steps else None
+        step = p.step_index + 1 if p.total_steps else None
+
+        lines = [
+            f"Ch{p.current_channel + 1} Step {step}/{p.total_steps}",
+            f"D: {et_str}/{tt_str}",
+            f"IP: {ip}",
+        ]
 
         return DisplayState(
-            mode="running",
-            title="MEASURING",
-            subtitle=self._mux_subtitle(p),
-            et_seconds=p.elapsed_seconds,
-            tt_seconds=p.tt_seconds,
-            step_current=step_current,
-            step_total=p.total_steps or None,
+            screen="running",
+            header=f"> {p.phase}",
+            lines=lines,
         )
 
-    def _mux_subtitle(self, p: Progress) -> Optional[str]:
-        if p.enabled_count:
-            return f"Ch {p.current_channel + 1} / {p.enabled_count}"
-        return None
+    def info(self, title: str, subtitle: str) -> DisplayState:
+        return DisplayState(
+            screen="info",
+            header=title,
+            lines=[
+                subtitle,
+                "",
+                f"T: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            ],
+            ttl_seconds=3,
+            return_to="idle",
+        )
