@@ -5,9 +5,10 @@ import subprocess
 import os
 import time
 import threading
+from system import services
+from system.display.display_state import DisplayState
 from system.preferences import prefs, KEY_SIMULATOR_ENABLED
 from system.log_utils import debug, info, warn, error
-from system.display import show_system_message
 from gasera.routes import engine
 
 from flask import Blueprint
@@ -308,7 +309,15 @@ def restart_service():
     # Restart service with optional simulator arg
     info(f"Restarting gasera.service with simulator={use_simulator}")
     buzzer.play("service_restart")
-    show_system_message(["SYSTEM", "Restarting Service...", "" , time.strftime("%H:%M:%S")], duration=2.0)
+    services.display_controller.show(
+        DisplayState(
+            mode="info",
+            title="Restarting Service...",
+            subtitle=time.strftime("%H:%M:%S"),
+            ttl_seconds=2,
+            return_to="idle",
+        )
+    )
     _run_async("sudo systemctl restart gasera.service")
     return jsonify({"ok": True, "useSimulator": use_simulator})
 
@@ -319,7 +328,15 @@ def device_restart():
         return guard
 
     buzzer.play("restart")
-    show_system_message(["SYSTEM", "Restarting...", "" , time.strftime("%H:%M:%S")], duration=2.0)
+    services.display_controller.show(
+        DisplayState(
+            mode="info",
+            title="Restarting Service...",
+            subtitle=time.strftime("%H:%M:%S"),
+            ttl_seconds=2,
+            return_to="idle",
+        )
+    )
     _run_async("sudo -n /usr/sbin/shutdown -r now", delay_sec=0)
     info("Device restart initiated")
     return jsonify({"ok": True})
@@ -331,7 +348,15 @@ def device_shutdown():
         return guard
 
     buzzer.play("shutdown")
-    show_system_message(["SYSTEM", "Shutting down...", "" , time.strftime("%H:%M:%S")], duration=2.0)
+    services.display_controller.show(
+        DisplayState(
+            mode="info",
+            title="Shutting Down...",
+            subtitle=time.strftime("%H:%M:%S"),
+            ttl_seconds=2,
+            return_to="idle",
+        )
+    )
     _run_async("sudo -n /usr/sbin/shutdown -h now", delay_sec=0)
     info("Device shutdown initiated")
     return jsonify({"ok": True})

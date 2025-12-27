@@ -17,6 +17,19 @@ let countdownTimer = null;
 let countdown = START_DELAY;
 
 // ============================================================
+// Mode & Engine State Helpers
+// ============================================================
+window.isEngineStarted = false;
+
+window.isMotorMode = () => window.UI_CAPS?.motor === true;
+window.isMuxMode = () => window.UI_CAPS?.mux === true;
+
+window.isMotorArmed = (phase) =>
+  window.isMotorMode() &&
+  phase === window.PHASE.IDLE &&
+  window.isEngineStarted === true;
+
+// ============================================================
 // Phase Handling & UI Updates
 // ============================================================
 function applyPhase(phase) {
@@ -33,20 +46,41 @@ function applyPhase(phase) {
   btnStart.dataset.previousPhase = btnStart.dataset.phase || null;
   btnStart.dataset.phase = phase;
   btnStart.classList.remove("btn-success", "btn-warning");
-  
-  if (phase === window.PHASE.IDLE || phase === window.PHASE.ABORTED) {
+
+  if (phase === window.PHASE.ABORTED) {
     btnStart.textContent = "Start Measurement";
-    btnStart.classList.add("btn-success");
+    btnStart.className = "btn btn-success btn-lg px-5";
     btnStart.disabled = false;
-    btnStart.dataset.phase = "";
-    btnStart.dataset.previousPhase = null;
-    if (phase === window.PHASE.ABORTED) {
-      btnAbort.textContent = "Aborted...";
-    }
+
+    btnRepeat.classList.add("d-none");
+    window.isEngineStarted = false;
   }
 
-  btnAbort.disabled = !btnStart.disabled;
-  btnRepeat.disabled = isRunning;
+  else if (window.isMotorArmed(phase)) {
+    // MOTOR: engine running, waiting for user
+    btnStart.textContent = "Awaiting Repeat Trigger";
+    btnStart.className = "btn btn-warning btn-lg px-5";
+    btnStart.disabled = true;
+
+    btnRepeat.classList.remove("d-none");
+    btnRepeat.disabled = false;
+  }
+
+  else if (phase === window.PHASE.IDLE) {
+    // MUX idle
+    btnStart.textContent = "Start Measurement";
+    btnStart.className = "btn btn-success btn-lg px-5";
+    btnStart.disabled = false;
+
+    btnRepeat.classList.add("d-none");
+  }
+
+
+  btnAbort.disabled = !(
+    window.isMeasurementRunning ||
+    window.isMotorArmed(phase)
+  );
+
 
   // Lock/unlock preference inputs
   window.lockPreferenceInputs?.(isRunning);
@@ -57,11 +91,11 @@ function applyPhase(phase) {
 // ============================================================
 function updateButtonText(btnElement, formattedTime = null) {
   if (!btnElement || !btnElement.dataset.phase) return;
-  
+
   const currentCh = window.latestCurrentChannel ?? 0;
   const nextCh = window.latestNextChannel ?? 1;
   const phase = btnElement.dataset.phase;
-  
+
   // Get phase text
   let phaseText = "";
   if (phase === window.PHASE.MEASURING) {
@@ -73,7 +107,7 @@ function updateButtonText(btnElement, formattedTime = null) {
   } else if (phase === window.PHASE.SWITCHING) {
     phaseText = `${window.getPhaseText(phase)} Ch${currentCh + 1} → Ch${nextCh + 1}`;
   }
-  
+
   // Append timer if provided
   if (formattedTime) {
     btnElement.textContent = `${phaseText} • ${formattedTime}`;
@@ -139,24 +173,26 @@ function startMeasurement() {
       if (!j.ok) {
         // Show error message to user
         window.showAlert?.(j.message || "Failed to start measurement", "warning");
-        
+
         // Reset button to enabled state
         btnStart.textContent = "Start Measurement";
         btnStart.classList.replace("btn-warning", "btn-success");
         btnStart.disabled = false;
-        
+
         console.warn("[MEAS] Start error:", j.message);
+      } else {
+        window.isEngineStarted = true;
       }
     })
     .catch(e => {
       // Handle network errors
       window.showAlert?.("Network error: " + (e.message || "Unknown error"), "danger");
-      
+
       // Reset button to enabled state
       btnStart.textContent = "Start Measurement";
       btnStart.classList.replace("btn-warning", "btn-success");
       btnStart.disabled = false;
-      
+
       console.warn("[MEAS] Start failed:", e);
     });
 }
@@ -218,7 +254,7 @@ function SSEHandler(d) {
     const repeatTotal = d.repeat_total ?? 0;
     const totalSteps = d.total_steps ?? 0;
     const buzzer_enabled = window.DeviceStatus?.getBuzzerEnabled(d);
-    
+
     // Store for timer/display updates
     window.latestElapsedSeconds = d.elapsed_seconds ?? 0;
     window.latestTtSeconds = d.tt_seconds ?? 0;

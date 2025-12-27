@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, Response, stream_with_context, request
-from system.display import init as display_attach
+from system import services
 from system.preferences import prefs
 from system.log_utils import verbose, debug, info, warn, error
 from gasera.trigger_monitor import TriggerMonitor
@@ -34,7 +34,7 @@ trigger.start()
 
 # Initialize live status service and start updater
 live_attach(engine)
-display_attach(engine)
+services.display_adapter.attach_engine(engine)
 
 start_background_updater()
 start_device_status_poller()
