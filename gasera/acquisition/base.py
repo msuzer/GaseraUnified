@@ -51,7 +51,8 @@ class BaseAcquisitionEngine(ABC):
     def __init__(self, motion: MotionInterface):
         self.motion = motion
         self._worker: Optional[threading.Thread] = None
-        self._stop_event = threading.Event()
+        self._stop_event = threading.Event()     # abort / error
+        self._finish_event = threading.Event()   # graceful end
         self._lock = threading.RLock()
 
         self.progress = Progress()
@@ -96,6 +97,7 @@ class BaseAcquisitionEngine(ABC):
                 return False, "Measurement already running"
 
             self._stop_event.clear()
+            self._finish_event.clear()
 
             ok, msg = self._validate_and_load_config()
             if not ok:
@@ -127,11 +129,21 @@ class BaseAcquisitionEngine(ABC):
             return True, self._start_ok_message()
 
     def stop(self) -> tuple[bool, str]:
+        # Forcefully stop the current task.
         if self.is_running():
             self._stop_event.set()
             self._on_stop_unblock()
             self._worker.join(timeout=2.0)
-            return True, "Stopped successfully"
+            return True, "Aborted successfully"
+        return False, "Not running"
+
+    def finish(self) -> tuple[bool, str]:
+        # Gracefully finish the current task.
+        if self.is_running():
+            self._finish_event.set()
+            self._on_stop_unblock()
+            self._worker.join(timeout=2.0)
+            return True, "Finished successfully"
         return False, "Not running"
 
     def is_running(self) -> bool:

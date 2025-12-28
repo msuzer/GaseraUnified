@@ -89,6 +89,18 @@ def abort_measurement() -> tuple[Response, int]:
 
     return jsonify({"ok": True, "message": "Abort initiated"}), 200
 
+@gasera_bp.route("/api/measurement/finish", methods=["POST"])
+def finish_measurement() -> tuple[Response, int]:
+    info("[MEAS] Finish requested")
+    
+    ok, msg = engine.finish()
+    
+    if not ok:
+        debug(f"[MEAS] finish ignored {msg}")
+        return jsonify({"ok": False, "message": msg}), 200
+
+    return jsonify({"ok": True, "message": "Finish requested"}), 200
+
 # ----------------------------------------------------------------------
 # Server-Sent Events
 # ----------------------------------------------------------------------

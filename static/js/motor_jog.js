@@ -132,6 +132,7 @@ function onMotorServiceAvailable() {
   show("motor-jog-card");          // actuator
   show("motor-timeout-block");     // actuator
   show("btnRepeat");               // actuator
+  show("btnFinish");               // actuator
 
   hide("channel-selection-card");  // mux-only
   hide("repeat-count-block");      // mux-only
@@ -143,6 +144,7 @@ function onMotorServiceUnavailable() {
   hide("motor-jog-card");
   hide("motor-timeout-block");
   hide("btnRepeat");
+  hide("btnFinish");
 
   show("channel-selection-card");
   show("repeat-count-block");

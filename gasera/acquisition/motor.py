@@ -104,25 +104,24 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             f"motor_timeout={self.cfg.motor_timeout_sec}s, actuators={self.cfg.actuator_ids}"
         )
 
-        rep = 0
+        rep = 0            
         while not self._stop_event.is_set():
             self._set_phase(Phase.ARMED)
             self._emit_task_event(TaskEvent.WAITING_FOR_TRIGGER)
-            
-            # wait for trigger
-            self._repeat_event.wait()
-            if self._stop_event.is_set():
-                break
 
-            # consume trigger
+            self._repeat_event.wait()
             self._repeat_event.clear()
+
+            if self._stop_event.is_set() or self._finish_event.is_set():
+                break
 
             self._emit_task_event(TaskEvent.CYCLE_STARTED)
             if not self._run_one_cycle(rep):
                 break
-            
+
             self._emit_task_event(TaskEvent.CYCLE_FINISHED)
             rep += 1
+
 
     def _run_one_cycle(self, rep: int) -> bool:
         assert self.cfg is not None

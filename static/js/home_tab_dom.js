@@ -9,6 +9,7 @@
 // ============================================================
 const btnStart = document.getElementById("btnStart");
 const btnRepeat = document.getElementById("btnRepeat");
+const btnFinish = document.getElementById("btnFinish");
 const btnAbort = document.getElementById("btnAbort");
 const btnAll = document.getElementById("btnAll");
 const btnNone = document.getElementById("btnNone");

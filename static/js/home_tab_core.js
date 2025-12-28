@@ -211,6 +211,20 @@ btnRepeat.onclick = async () => {
   }
 };
 
+btnFinish.onclick = async () => {
+  try {
+    const res = await safeFetch(API_PATHS?.measurement?.finish, {
+      method: "POST"
+    });
+    const j = await res.json();
+    if (!j.ok) {
+      window.showAlert?.("Finish failed", "danger");
+    }
+  } catch (e) {
+    window.showAlert?.("Finish error", "danger");
+  }
+};
+
 btnAbort.addEventListener("click", () => {
   window.showConfirmModal({
     title: "Confirm Abort",

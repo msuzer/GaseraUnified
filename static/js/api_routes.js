@@ -3,6 +3,7 @@ API_PATHS = {
         "start": "/gasera/api/measurement/start",
         "repeat": "/gasera/api/measurement/repeat",
         "abort": "/gasera/api/measurement/abort",
+        "finish": "/gasera/api/measurement/finish",
         "events": "/gasera/api/measurement/events"
     },
     "logs": {
