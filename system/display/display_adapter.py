@@ -19,6 +19,7 @@ class DisplayAdapter:
         self._last_progress: Progress | None = None
         self._controller = controller
         self._controller.set_idle_callback(self._idle)
+        self._controller.set_refresh_callback(self._refresh, interval_seconds=10.0)
         self._engine = None
 
     # ------------------------------------------------------------------
@@ -32,6 +33,21 @@ class DisplayAdapter:
         # TaskEvent channel is optional → guard it
         if hasattr(engine, "subscribe_task_event"):
             engine.subscribe_task_event(self.from_task_event)
+
+    def _refresh(self):
+        """
+        Periodic content refresh (time/IP/etc).
+        Does NOT change screen.
+        """
+        if not self._controller.current:
+            return
+
+        screen = self._controller.current.screen
+
+        if screen == "idle":
+            self._controller.update_content(self._idle())
+        elif screen == "armed":
+            self._controller.update_content(self._armed())
 
     # ------------------------------------------------------------------
     # Progress = content updates ONLY
@@ -100,10 +116,14 @@ class DisplayAdapter:
         )
 
     def _armed(self) -> DisplayState:
+        lines = [""]
+        lines.append(f"T: {get_formatted_timestamp()}")
+        lines.append(f"IP: {get_ip_address()}")
+
         return DisplayState(
             screen="armed",
-            header="READY",
-            lines=["Awaiting trigger", "", get_ip_address()],
+            header="Awaiting trigger",
+            lines=lines,
         )
 
     def _running(self) -> DisplayState:

@@ -12,7 +12,15 @@ class DisplayController:
         self.current: Optional[DisplayState] = None
         self.previous: Optional[DisplayState] = None
         self._expire_at: Optional[float] = None
+        self._last_refresh_at: float | None = None
+        self._refresh_interval: float = 10.0  # seconds
+        self._refresh_callback = None
         self._idle = None
+
+    def set_refresh_callback(self, callback, interval_seconds: float = 10.0):
+        self._refresh_callback = callback
+        self._refresh_interval = interval_seconds
+        self._last_refresh_at = time.time()
 
     def set_idle_callback(self, idle_callback):
         self._idle = idle_callback
@@ -35,6 +43,25 @@ class DisplayController:
         if self._expire_at and time.time() >= self._expire_at:
             self._expire_at = None
             self._auto_return()
+
+    def tick(self):
+        now = time.time()
+
+        # TTL handling (existing)
+        if self._expire_at and now >= self._expire_at:
+            self._expire_at = None
+            self._auto_return()
+            return
+
+        # 🔄 Periodic refresh
+        if (self.current and self._refresh_callback and self._refresh_interval
+            and (
+                self._last_refresh_at is None
+                or now - self._last_refresh_at >= self._refresh_interval
+            )
+        ):
+            self._last_refresh_at = now
+            self._refresh_callback()
 
     def _auto_return(self):
         if not self.current:
