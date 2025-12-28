@@ -1,7 +1,9 @@
 import time
 import threading
-from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
-from system.log_utils import verbose, info, warn, debug
+from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
+from gasera.acquisition.motor import MotorAcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine
+from system.log_utils import error, verbose, info, warn, debug
 from gpio.gpio_control import gpio
 from gpio.pin_assignments import TRIGGER_PIN
 
@@ -128,10 +130,18 @@ class TriggerMonitor:
     def _handle_long_press(self):
         if self.engine.is_running():
             try:
-                debug("[TRIGGER] Long press → Abort measurement")
-                ok, msg = self.engine.stop()
-                if not ok:
-                    warn(f"[TRIGGER] Abort rejected: {msg}")
+                if isinstance(self.engine, MotorAcquisitionEngine):
+                    debug("[TRIGGER] Long press → Finish measurement")
+                    ok, msg = self.engine.finish()
+                    if not ok:
+                        warn(f"[TRIGGER] Finish rejected: {msg}")
+                elif isinstance(self.engine, MuxAcquisitionEngine):
+                    debug("[TRIGGER] Long press → Abort measurement")
+                    ok, msg = self.engine.stop()
+                    if not ok:
+                        warn(f"[TRIGGER] Abort rejected: {msg}")
+                else:
+                    error(f"[TRIGGER] Unknown engine type for abort/finish")
             except Exception as e:
                 warn(f"[TRIGGER] Abort error: {e}")
         else:
