@@ -114,10 +114,10 @@ def sse_events() -> Response:
 
         while True:
             try:
-                _progress, _live_data = get_live_snapshots()
+                _progress, _live_data, _task_event = get_live_snapshots()
                 _device_status = get_device_snapshots()
 
-                state = tracker.build(_progress, _live_data, _device_status)
+                state = tracker.build(_progress, _live_data, _device_status, _task_event)
                 payload = json.dumps(state, sort_keys=True)
                 if payload != last_payload:
                     yield f"data: {payload}\n\n"

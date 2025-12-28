@@ -1,3 +1,4 @@
+# live_status_service.py
 from __future__ import annotations
 import threading
 import time
@@ -8,8 +9,10 @@ from system.log_utils import debug, warn, error
 from gasera.controller import gasera
 from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
 from gasera.acquisition.base import Progress, Phase
+from gasera.acquisition.task_event import TaskEvent
 
 # High-frequency data snapshots (progress + live measurements)
+latest_task_event: dict | None = None
 latest_progress_snapshot: Dict[str, Any] = {"phase": Phase.IDLE, "current_channel": 0, "repeat_index": 0}
 latest_live_data: Dict[str, Any] = {}
 
@@ -24,6 +27,7 @@ def init(engine: AcquisitionEngine) -> None:
     global _engine
     _engine = engine
     engine.subscribe(_on_progress)
+    engine.subscribe_task_event(_on_task_event)
 
 def _on_progress(progress: Progress) -> None:
     global latest_progress_snapshot
@@ -34,6 +38,23 @@ def _on_progress(progress: Progress) -> None:
     except Exception as e:
         warn(f"[live] progress update error: {e}")
 
+def _on_task_event(event: TaskEvent) -> None:
+    global latest_task_event
+    try:
+        with _lock:
+            latest_task_event = {
+                "event": event.name,
+                "ts": time.time(),
+            }
+    except Exception as e:
+        warn(f"[live] task_event update error: {e}")
+
+def consume_task_event() -> dict | None:
+    global latest_task_event
+    with _lock:
+        ev = latest_task_event.copy() if latest_task_event else None
+        latest_task_event = None
+        return ev
 
 def start_background_updater() -> None:
     t = threading.Thread(target=_background_status_updater, daemon=True, name="sse-updater")
@@ -97,7 +118,11 @@ def _background_status_updater() -> None:
             error(f"[live] background updater error: {e}")
         time.sleep(SSE_UPDATE_INTERVAL)
 
-def get_live_snapshots() -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def get_live_snapshots() -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any] | None]:
     """Get high-frequency data snapshots: progress and live measurements."""
     with _lock:
-        return latest_progress_snapshot.copy(), latest_live_data.copy()
+        return (
+            latest_progress_snapshot.copy(),
+            latest_live_data.copy(),
+            consume_task_event()
+        )
