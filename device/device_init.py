@@ -4,7 +4,6 @@ import time, threading
 from device.device_profile import DEVICE, Device
 from gpio.pin_assignments import select_profile
 from system import services
-from buzzer.buzzer_facade import BuzzerFacade
 from system.log_utils import info
 from system.display_driver import DisplayDriver
 from system.display.display_controller import DisplayController
@@ -25,8 +24,12 @@ def init_device():
     from gpio.pin_assignments import BUZZER_PIN
     info(f"[DEVICE] BUZZER_PIN resolved to {BUZZER_PIN}")
 
+    # Initialize outputs after profile selection
+    from gpio.gpio_control import initialize_outputs
+    initialize_outputs()
+
 def init_buzzer_service():
-    from system import services
+    from buzzer.buzzer_facade import BuzzerFacade
     services.buzzer = BuzzerFacade()
     atexit.register(services.buzzer.shutdown)
 
