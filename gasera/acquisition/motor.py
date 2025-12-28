@@ -5,23 +5,22 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
+import time
 from typing import Optional
 
+from gasera.acquisition.task_event import TaskEvent
 from motion.iface import MotionInterface
 from system.log_utils import debug, info, warn, error
 from system.preferences import prefs
-from buzzer.buzzer_facade import buzzer
+from system import services
 
-from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, SWITCHING_SETTLE_TIME, BaseAcquisitionEngine, Phase
+from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, BaseAcquisitionEngine
+from gasera.acquisition.phase import Phase
 
 from system.preferences import (
     KEY_MEASUREMENT_DURATION,
     KEY_PAUSE_SECONDS,
-    KEY_REPEAT_COUNT,
     KEY_MOTOR_TIMEOUT,
-    KEY_INCLUDE_CHANNELS,
-    KEY_ONLINE_MODE_ENABLED,
-    ChannelState,
 )
 
 @dataclass
@@ -46,6 +45,8 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._repeat_event = threading.Event()
         self._cycle_in_progress = False
         self._cycle_processed = 0  # completed actuator measurements in current cycle
+        self._cycle_start_timestamp: Optional[float] = None
+        self._accumulated_seconds: float = 0.0
 
     def _start_ok_message(self) -> str:
         return "Engine started (waiting for repeat trigger)"
@@ -70,17 +71,13 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.enabled_count = len(cfg.actuator_ids)
         self.progress.total_steps = self.progress.enabled_count  # per-cycle
         self.progress.repeat_total = 0
-        self.progress.tt_seconds = None
+        self.progress.tt_seconds = self.estimate_cycle_time_seconds()
 
         return True, "Configuration valid"
 
     def _on_start_prepare(self) -> tuple[bool, str]:
         self._repeat_event.clear()
-        # Best-effort initial homing so first trigger starts cleanly
-        try:
-            self._home_all_actuators()
-        except Exception as e:
-            warn(f"[ENGINE] initial homing failed: {e}")
+        self._accumulated_seconds = 0.0
         return True, "ok"
 
     def _on_stop_unblock(self) -> None:
@@ -93,11 +90,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         with self._lock:
             if self._cycle_in_progress or self._repeat_event.is_set():
-                buzzer.play("busy")
+                services.buzzer.play("busy")
                 return False, "Cycle already in progress"
 
             self._repeat_event.set()
-            buzzer.play("step")
+            services.buzzer.play("step")
             return True, "Repeat triggered"
 
     def _run_loop(self) -> None:
@@ -109,8 +106,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         rep = 0
         while not self._stop_event.is_set():
-            self._set_phase(Phase.IDLE)
-
+            self._set_phase(Phase.ARMED)
+            self._emit_task_event(TaskEvent.WAITING_FOR_TRIGGER)
+            
             # wait for trigger
             self._repeat_event.wait()
             if self._stop_event.is_set():
@@ -119,8 +117,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             # consume trigger
             self._repeat_event.clear()
 
+            self._emit_task_event(TaskEvent.CYCLE_STARTED)
             if not self._run_one_cycle(rep):
                 break
+            
+            self._emit_task_event(TaskEvent.CYCLE_FINISHED)
             rep += 1
 
     def _run_one_cycle(self, rep: int) -> bool:
@@ -134,7 +135,8 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.overall_percent = 0
         self.progress.total_steps = self.progress.enabled_count  # per-cycle
         self.progress.repeat_total = 0
-        self.progress.tt_seconds = None
+        self._cycle_start_timestamp = time.time()
+        self.progress.elapsed_seconds = 0.0
 
         ok, msg = self._start_measurement()
         if not ok:
@@ -150,7 +152,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 # UI channel mapping
                 self.progress.current_channel = idx
                 self.progress.next_channel = (idx + 1) if (idx + 1 < len(self.cfg.actuator_ids)) else None
-                self._notify()
+                self._emit_progress_event()
 
                 if not self._run_actuator_sequence(actuator_id):
                     return False
@@ -161,13 +163,21 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 self._update_cycle_progress(rep, self._cycle_processed)
 
             self.progress.repeat_index = rep + 1  # completed cycles count
-            self._notify()
-            buzzer.play("completed")
+            self._emit_progress_event()
+            services.buzzer.play("completed")
             return True
 
         finally:
             if not self._stop_measurement():
                 warn("[ENGINE] Failed to stop Gasera after cycle")
+
+            # Accumulate completed (or partial) cycle time
+            if self._cycle_start_timestamp is not None:
+                self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
+            self._cycle_start_timestamp = None
+            # Between cycles we show 0/TT (armed)
+            self.progress.elapsed_seconds = 0.0
+
             self._cycle_in_progress = False
 
     def _run_actuator_sequence(self, actuator_id: str) -> bool:
@@ -231,12 +241,12 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             f"[ENGINE] cycle progress: rep={rep} processed={processed_in_cycle}/{denom} "
             f"percent={pct}% step_index={self.progress.step_index}"
         )
-        self._notify()
+        self._emit_progress_event()
 
     def _home_all_actuators(self):
         assert self.cfg is not None
         self._set_phase(Phase.HOMING)
-        buzzer.play("home")
+        services.buzzer.play("home")
 
         for idx, actuator_id in enumerate(self.cfg.actuator_ids):
             if self._stop_event.is_set():
@@ -244,7 +254,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
             self.progress.current_channel = idx
             self.progress.next_channel = (idx + 1) if (idx + 1 < len(self.cfg.actuator_ids)) else None
-            self._notify()
+            self._emit_progress_event()
 
             try:
                 self.motion.home(actuator_id)
@@ -253,17 +263,34 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
             self._blocking_wait(float(self.cfg.motor_timeout_sec), notify=True)
 
-    def _finalize_run(self) -> None:
-        if self._stop_event.is_set():
-            self._stop_event.clear()
-            self._set_phase(Phase.ABORTED)
-            buzzer.play("cancel")
-        else:
-            self._set_phase(Phase.IDLE)
-            buzzer.play("completed")
-            info("[ENGINE] Engine run complete")
+    def estimate_cycle_time_seconds(self) -> float:
+        if not self.cfg:
+            return 0.0
 
-        # Make sure Gasera is stopped
-        if not self.check_gasera_idle():
-            if not self._stop_measurement():
-                warn("[ENGINE] Failed to stop Gasera during finalization")
+        per_actuator = (
+            float(self.cfg.motor_timeout_sec) +   # extend
+            float(self.cfg.pause_seconds) +         # pause
+            float(self.cfg.measure_seconds) +       # measure
+            float(self.cfg.motor_timeout_sec)        # home
+        )
+
+        from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME
+        return per_actuator * len(self.cfg.actuator_ids) + GASERA_CMD_SETTLE_TIME
+    
+    def _refresh_derived_progress(self) -> None:
+        if self._cycle_start_timestamp is not None:
+            self.progress.elapsed_seconds = max(
+                0.0, time.time() - self._cycle_start_timestamp
+            )
+        else:
+            # Idle / armed
+            self.progress.elapsed_seconds = 0.0
+
+    def _finalize_run(self) -> None:
+        if self._cycle_start_timestamp is not None:
+            self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
+            self._cycle_start_timestamp = None
+            self.progress.elapsed_seconds = float(self._accumulated_seconds)
+            self.progress.tt_seconds = float(self._accumulated_seconds)
+            
+        info("[ENGINE] finalizing motor measurement task")

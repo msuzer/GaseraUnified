@@ -12,8 +12,7 @@ import threading
 import time
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional, Callable, Iterable
+from typing import List, Optional, Callable
 
 from gasera.device_status_service import get_latest_gasera_status
 from motion.iface import MotionInterface
@@ -22,80 +21,21 @@ from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
 from system.preferences import prefs
 from gasera.controller import gasera, TaskIDs
-from buzzer.buzzer_facade import buzzer
+from system import services
 from gasera.measurement_logger import MeasurementLogger
+from gasera.acquisition.task_event import TaskEvent
+from gasera.acquisition.phase import Phase
+from gasera.acquisition.progress import Progress
+from system import services
 
 from system.preferences import (
-    KEY_MEASUREMENT_DURATION,
-    KEY_PAUSE_SECONDS,
-    KEY_REPEAT_COUNT,
-    KEY_MOTOR_TIMEOUT,
-    KEY_INCLUDE_CHANNELS,
     KEY_ONLINE_MODE_ENABLED,
-    ChannelState,
 )
 
 # Timing constants
 SWITCHING_SETTLE_TIME = 5.0          # mux settle time
 GASERA_CMD_SETTLE_TIME = 1.0         # allow Gasera to process mode/start/stop
-
 DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
-
-
-class Phase:
-    IDLE = "IDLE"
-    HOMING = "HOMING"
-    PAUSED = "PAUSED"
-    MEASURING = "MEASURING"
-    SWITCHING = "SWITCHING"
-    ABORTED = "ABORTED"
-
-
-class Progress:
-    """
-    Frontend contract (keep stable).
-    Snapshot-safe: do NOT add non-serializable fields.
-    """
-
-    def __init__(self):
-        self.phase = Phase.IDLE
-        self.current_channel = 0
-        self.next_channel: Optional[int] = None
-
-        # percent: progress within current logical unit (repeat/cycle) 0..100
-        self.percent = 0
-
-        # overall_percent: mux -> across all repeats 0..100
-        # motor -> typically mirrors percent (unbounded run)
-        self.overall_percent = 0
-
-        self.repeat_index = 0
-        self.repeat_total: int = 0
-
-        self.enabled_count: int = 0
-
-        # step_index: total completed measurements (monotonic count; mux sets deterministically)
-        self.step_index: int = 0
-
-        self.total_steps: int = 0
-        self.elapsed_seconds: float = 0.0
-        self.tt_seconds: Optional[float] = None
-
-    def reset(self):
-        """Reset progress state for a new run."""
-        self.phase = Phase.IDLE
-        self.current_channel = 0
-        self.next_channel = None
-        self.percent = 0
-        self.overall_percent = 0
-        self.repeat_index = 0
-        self.step_index = 0
-        self.elapsed_seconds = 0.0
-        # repeat_total/total_steps/tt_seconds are set by engine on start
-
-    def to_dict(self) -> dict:
-        return dict(self.__dict__)
-
 
 class BaseAcquisitionEngine(ABC):
     """
@@ -115,12 +55,35 @@ class BaseAcquisitionEngine(ABC):
         self._lock = threading.RLock()
 
         self.progress = Progress()
-        self.callbacks: list[Callable[[Progress], None]] = []
+        
+        self._progress_subs: List[Callable] = []
+        self._display_task_subs: List[Callable] = []
 
         self.logger: Optional[MeasurementLogger] = None
 
         self._last_notified_vch: int = -1
         self._start_timestamp: Optional[float] = None
+
+    def subscribe(self, cb: Callable[[Progress], None]) -> None:
+        self._progress_subs.append(cb)
+
+    def subscribe_task_event(self, cb: Callable[[TaskEvent], None]) -> None:
+        self._display_task_subs.append(cb)
+
+    def _emit_progress_event(self):
+        self._refresh_derived_progress()
+        for cb in self._progress_subs:
+            try:
+                cb(self.progress)
+            except Exception as e:
+                warn(f"[ENGINE] notify error: {e}")
+
+    def _emit_task_event(self, event: TaskEvent):
+        for cb in self._display_task_subs:
+            try:
+                cb(event)
+            except Exception:
+                pass
 
     # -----------------------------
     # Public API
@@ -129,35 +92,35 @@ class BaseAcquisitionEngine(ABC):
         with self._lock:
             if self.is_running():
                 warn("[ENGINE] start requested but already running")
-                buzzer.play("busy")
+                services.buzzer.play("busy")
                 return False, "Measurement already running"
 
             self._stop_event.clear()
 
             ok, msg = self._validate_and_load_config()
             if not ok:
-                buzzer.play("invalid")
+                services.buzzer.play("invalid")
                 return False, msg
 
             ok, msg = self._apply_online_mode_preference()
             if not ok:
-                buzzer.play("error")
+                services.buzzer.play("error")
                 return False, msg
 
             ok, msg = self._on_start_prepare()
             if not ok:
-                buzzer.play("error")
+                services.buzzer.play("error")
                 return False, msg
-
-            # Reset progress for the run
-            self.progress.reset()
 
             # Initialize logging
             log_path = get_log_directory()
             self.logger = MeasurementLogger(log_path)
 
-            self._start_timestamp = time.time()
+            self.progress.reset_runtime()
+            self._set_phase(Phase.IDLE)   # explicit, safe
+            # self._emit_task_event(TaskEvent.TASK_STARTED)
 
+            self._start_timestamp = time.time()
             self._worker = threading.Thread(target=self._run_loop_wrapper, daemon=True)
             self._worker.start()
 
@@ -173,9 +136,6 @@ class BaseAcquisitionEngine(ABC):
 
     def is_running(self) -> bool:
         return bool(self._worker) and self._worker.is_alive()
-
-    def subscribe(self, cb: Callable[[Progress], None]):
-        self.callbacks.append(cb)
 
     def trigger_repeat(self) -> tuple[bool, str]:
         # Default: not supported unless subclass overrides.
@@ -221,6 +181,23 @@ class BaseAcquisitionEngine(ABC):
             self._run_loop()
         finally:
             self._finalize_run()
+                        
+            if self._stop_event.is_set():
+                self._stop_event.clear()
+                self._set_phase(Phase.ABORTED)
+                self._emit_task_event(TaskEvent.TASK_ABORTED)
+                services.buzzer.play("cancel")
+                info("[ENGINE] Measurement run aborted by user")
+            else:
+                self._set_phase(Phase.IDLE)
+                self._emit_task_event(TaskEvent.TASK_FINISHED)
+                services.buzzer.play("completed")
+                info("[ENGINE] Measurement run complete")
+
+        if not self.check_gasera_idle():
+            if not self._stop_measurement():
+                warn("[ENGINE] Failed to stop Gasera during finalization")
+            
             # Shared close-out
             if self.logger:
                 try:
@@ -228,8 +205,6 @@ class BaseAcquisitionEngine(ABC):
                 except Exception:
                     pass
                 self.logger = None
-            # self._start_timestamp = None
-            # self.progress.tt_seconds = None
 
     # -----------------------------
     # Shared helpers
@@ -306,7 +281,7 @@ class BaseAcquisitionEngine(ABC):
                 break
 
             if notify:
-                self._notify()
+                self._emit_progress_event()
 
             time.sleep(min(base_interval, remaining))
         return True
@@ -321,15 +296,7 @@ class BaseAcquisitionEngine(ABC):
 
         if changed:
             info(f"[ENGINE] phase -> {phase}")
-            self._notify()
-
-    def _notify(self):
-        self._refresh_derived_progress()
-        for cb in self.callbacks:
-            try:
-                cb(self.progress)
-            except Exception as e:
-                warn(f"[ENGINE] notify error: {e}")
+            self._emit_progress_event()
 
     def _refresh_derived_progress(self) -> None:
         # elapsed_seconds is always meaningful

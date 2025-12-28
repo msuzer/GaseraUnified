@@ -5,20 +5,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Optional
+from gasera.acquisition.task_event import TaskEvent
 from motion.iface import MotionInterface
 from system.log_utils import debug, info, warn, error
 from system.preferences import prefs
-from buzzer.buzzer_facade import buzzer
+from system import services
 
-from gasera.acquisition.base import SWITCHING_SETTLE_TIME, BaseAcquisitionEngine, Phase
+from gasera.acquisition.base import SWITCHING_SETTLE_TIME, BaseAcquisitionEngine
+from gasera.acquisition.phase import Phase
 
 from system.preferences import (
     KEY_MEASUREMENT_DURATION,
     KEY_PAUSE_SECONDS,
     KEY_REPEAT_COUNT,
-    KEY_MOTOR_TIMEOUT,
     KEY_INCLUDE_CHANNELS,
-    KEY_ONLINE_MODE_ENABLED,
     ChannelState,
 )
 
@@ -59,7 +59,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.enabled_count = sum(1 for s in cfg.include_channels if s > ChannelState.INACTIVE)
         if self.progress.enabled_count == 0:
             warn("[ENGINE] no channels enabled, skipping measurement")
-            buzzer.play("invalid")
+            services.buzzer.play("invalid")
             return False, "No channels enabled"
 
         return True, "Configuration valid"
@@ -75,6 +75,9 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.repeat_total = self.cfg.repeat_count
         self.progress.total_steps = self.cfg.repeat_count * self.progress.enabled_count
         self.progress.tt_seconds = self.estimate_total_time_seconds()
+        
+        self._emit_task_event(TaskEvent.TASK_STARTED)
+        
         return True, "ok"
 
     def trigger_repeat(self) -> tuple[bool, str]:
@@ -87,7 +90,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
             f"[ENGINE] start: measure={self.cfg.measure_seconds}s, pause={self.cfg.pause_seconds}s, "
             f"repeat={self.cfg.repeat_count}, enabled_channels={self.progress.enabled_count}/{self.TOTAL_CHANNELS}"
         )
-
+                
         try:
             for rep in range(self.cfg.repeat_count):
                 if self._stop_event.is_set():
@@ -174,7 +177,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self._set_phase(Phase.SWITCHING)
 
         if was_enabled:
-            buzzer.play("step")
+            services.buzzer.play("step")
 
         self.motion.step()
 
@@ -205,7 +208,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
 
     def _home_mux(self):
         self._set_phase(Phase.HOMING)
-        buzzer.play("home")
+        services.buzzer.play("home")
         self.motion.home()
         self._blocking_wait(SWITCHING_SETTLE_TIME, notify=True)
 
@@ -229,15 +232,4 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         return float(self.cfg.repeat_count) * time_per_repeat + 1.0
 
     def _finalize_run(self) -> None:
-        if self._stop_event.is_set():
-            self._stop_event.clear()
-            self._set_phase(Phase.ABORTED)
-            buzzer.play("cancel")
-        else:
-            self._set_phase(Phase.IDLE)
-            buzzer.play("completed")
-            info("[ENGINE] Measurement run complete")
-
-        if not self.check_gasera_idle():
-            if not self._stop_measurement():
-                warn("[ENGINE] Failed to stop Gasera during finalization")
+        info("[ENGINE] finalizing MUX measurement task")
