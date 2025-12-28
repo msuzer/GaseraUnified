@@ -5,8 +5,6 @@ from typing import Optional
 
 from system.display.display_state import DisplayState
 from system.display_driver import DisplayDriver
-from system.display.utils import get_ip_address, get_wifi_ssid, get_gasera_status
-
 
 class DisplayController:
     def __init__(self, driver: DisplayDriver):
@@ -14,6 +12,10 @@ class DisplayController:
         self.current: Optional[DisplayState] = None
         self.previous: Optional[DisplayState] = None
         self._expire_at: Optional[float] = None
+        self._idle = None
+
+    def set_idle_callback(self, idle_callback):
+        self._idle = idle_callback
 
     def show(self, intent: DisplayState):
         if self.current == intent:
@@ -39,16 +41,8 @@ class DisplayController:
             return
         
         if self.current.return_to == "idle":
-            from datetime import datetime
-            ip = get_ip_address()
-            wifi = get_wifi_ssid()
-            gasera = get_gasera_status()
-            now = datetime.now().strftime("%d.%m.%Y %H:%M")
-            self.show(DisplayState(
-                screen="idle",
-                header=f"W: {wifi}",
-                lines=[f"IP: {ip}", f"G: Gasera {gasera}", f"T: {now}"],
-            ))
+            if self._idle:
+                self.show(self._idle())
         elif self.current.return_to == "previous" and self.previous:
             self.show(self.previous)
 

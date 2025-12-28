@@ -1,6 +1,6 @@
 from flask import request, jsonify
 
-from buzzer.buzzer_facade import buzzer
+from system import services
 import subprocess
 import os
 import time
@@ -307,7 +307,7 @@ def restart_service():
 
     # Restart service with optional simulator arg
     info(f"Restarting gasera.service with simulator={use_simulator}")
-    buzzer.play("service_restart")
+    services.buzzer.play("service_restart")
     services.display_controller.show(
         services.display_adapter.info("User Request:", "Restarting Service...")
     )
@@ -320,7 +320,7 @@ def device_restart():
     if guard:
         return guard
 
-    buzzer.play("restart")
+    services.buzzer.play("restart")
     services.display_controller.show(
         services.display_adapter.info("User Request:", "Restarting Device...")
     )
@@ -334,7 +334,7 @@ def device_shutdown():
     if guard:
         return guard
 
-    buzzer.play("shutdown")
+    services.buzzer.play("shutdown")
     services.display_controller.show(
         services.display_adapter.info("User Request:", "Shutting Down Device...")
     )

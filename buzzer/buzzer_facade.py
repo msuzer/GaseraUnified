@@ -114,8 +114,3 @@ class BuzzerFacade:
     def is_enabled(self) -> bool:
         """Return current live enable state."""
         return bool(self.enabled)
-
-# Export singleton
-buzzer = BuzzerFacade()
-# init_buzzer()  # Already called in BuzzerFacade.__init__
-atexit.register(buzzer.shutdown)

@@ -2,11 +2,10 @@ from flask import Flask, render_template
 import sys
 from pathlib import Path
 
-from device.device_init import init_device, init_display_stack
+from device.device_init import init_buzzer_service, init_device, init_display_stack
 init_device()
 
 from composition import engine
-
 from system import services
 from system.log_utils import debug
 from gasera.tcp_client import init_tcp_client
@@ -32,9 +31,10 @@ else:
 tcp_client = init_tcp_client(target_ip)
 debug(f"[GaseraMux] TCP target: {target_ip}:8888")
 
-from buzzer.buzzer_facade import buzzer
+from system import services
 debug("starting service", version="1.0.0")
-buzzer.play("power_on")
+init_buzzer_service()
+services.buzzer.play("power_on")
 
 app = Flask(__name__)
 

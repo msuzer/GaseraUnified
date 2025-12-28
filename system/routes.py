@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
 from system.preferences import prefs
 from system.log_utils import debug, info, warn, error
-from buzzer.buzzer_facade import buzzer
+from system import services
 
 from system.preferences import (
     KEY_INCLUDE_CHANNELS,

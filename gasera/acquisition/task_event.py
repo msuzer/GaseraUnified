@@ -1,15 +1,15 @@
-# gasera/acquisition/display_event.py
+# gasera/acquisition/task_event.py
 
 from enum import Enum, auto
 
 
-class DisplayEvent(Enum):
+class TaskEvent(Enum):
     """
     Discrete, semantic UI-relevant moments emitted by engines.
     NOT continuous state.
     NOT screens.
     """
-    ENGINE_STARTED = auto()
+    TASK_STARTED = auto()
 
     WAITING_FOR_TRIGGER = auto()   # motor armed, waiting user
     CYCLE_STARTED = auto()

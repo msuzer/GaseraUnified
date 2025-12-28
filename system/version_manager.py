@@ -76,10 +76,10 @@ def _restart_service(reason: str = ""):
 
     # Local UX feedback (safe: happens before process dies)
     try:
-        from buzzer.buzzer_facade import buzzer
+        from system import services
         import time
 
-        buzzer.play("service_restart")
+        services.buzzer.play("service_restart")
         services.display_controller.show(
             services.display_adapter.info("Version Manager:", "Restarting Service...")
         )
