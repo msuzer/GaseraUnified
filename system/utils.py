@@ -28,7 +28,7 @@ def get_gasera_status():
     return "Checking"
 
 def get_formatted_timestamp():
-    return datetime.now().strftime("%Y-%m-%d %H:%M")
+    return datetime.now().strftime("%d.%m.%Y %H:%M")
 
 def format_duration(seconds, fixed=False):
     """Format seconds as duration.
