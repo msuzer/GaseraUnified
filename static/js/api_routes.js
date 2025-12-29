@@ -13,6 +13,7 @@ API_PATHS = {
         "storage": "/gasera/api/logs/storage"
     },
     "settings": {
+        "profile": "/system/profile",
         "read": "/system/prefs",
         "update": "/system/prefs",
         "buzzer": "/system/buzzer"

@@ -7,45 +7,70 @@
 // UI Capabilities (set by server on page load)
 // ---------------------------------------------------------------------
 window.UI_CAPS = {
-  motor: false,
-  mux: false
+    motor: false,
+    mux: false
 };
 
 window.isMotorMode = () => window.UI_CAPS?.motor === true;
 window.isMuxMode = () => window.UI_CAPS?.mux === true;
 
 function show(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove("d-none");
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("d-none");
 }
 
 function hide(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add("d-none");
+    const el = document.getElementById(id);
+    if (el) el.classList.add("d-none");
 }
 
-window.switchToMotorMode = function() {
-  window.UI_CAPS.motor = true;
-  window.UI_CAPS.mux = false;
-  show("motor-jog-card");          // actuator
-  show("motor-timeout-block");     // actuator
-  show("btnRepeat");               // actuator
-  show("btnFinish");               // actuator
+window.switchToMotorMode = function () {
+    window.UI_CAPS.motor = true;
+    window.UI_CAPS.mux = false;
+    show("motor-jog-card");          // actuator
+    show("motor-timeout-block");     // actuator
+    show("btnRepeat");               // actuator
+    show("btnFinish");               // actuator
 
-  hide("channel-selection-card");  // mux-only
-  hide("repeat-count-block");      // mux-only
+    hide("channel-selection-card");  // mux-only
+    hide("repeat-count-block");      // mux-only
 }
 
-window.switchToMuxMode = function() {
-  window.UI_CAPS.motor = false;
-  window.UI_CAPS.mux = true;
-  hide("motor-jog-card");
-  hide("motor-timeout-block");
-  hide("btnRepeat");
-  hide("btnFinish");
+window.switchToMuxMode = function () {
+    window.UI_CAPS.motor = false;
+    window.UI_CAPS.mux = true;
+    hide("motor-jog-card");
+    hide("motor-timeout-block");
+    hide("btnRepeat");
+    hide("btnFinish");
 
-  show("channel-selection-card");
-  show("repeat-count-block");
+    show("channel-selection-card");
+    show("repeat-count-block");
+}
+
+async function queryAppProfile() {
+    safeFetch(API_PATHS?.settings?.profile)
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`profile-http-${res.status}`);
+            }
+            return res.json();
+        })
+        .then(data => {
+            const profile = data?.profile;
+
+            if (profile === "motor") {
+                window.switchToMotorMode?.();
+            } else {
+                // default + safety: mux, none, unknown
+                window.switchToMuxMode?.();
+            }
+        })
+        .catch(err => {
+            // Fail-safe: default to mux
+            console.warn("[PROFILE] detection failed, defaulting to mux:", err.message);
+            window.switchToMuxMode?.();
+        });
 }
 
 // ---------------------------------------------------------------------
@@ -391,6 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try { window.liveChart?.resize?.(); } catch { }
     });
     startGaseraSSE();
+    queryAppProfile();
     // console.log("[core_index] SSE started");
 });
 

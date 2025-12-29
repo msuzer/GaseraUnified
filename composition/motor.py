@@ -1,4 +1,5 @@
 # composition/motor.py
+from gasera.acquisition.base import BaseAcquisitionEngine
 from gasera.acquisition.motor import MotorAcquisitionEngine as AcquisitionEngine
 from motor.bank import MotorBank
 from motor.button_monitor import MotorButtonMonitor
@@ -8,7 +9,7 @@ from motion.profiles.motor import build_motion
 from system import services
 from gpio import pin_assignments as PINS
 
-def build_engine():
+def build_engine() -> BaseAcquisitionEngine:
     motors = MotorBank({
         "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
         "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),

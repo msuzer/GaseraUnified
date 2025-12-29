@@ -1,4 +1,5 @@
 # composition/mux.py
+from gasera.acquisition.base import BaseAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
 from mux.mux_gpio import GPIOMux
 from mux.mux_vici_uma import ViciUMAMux
@@ -6,7 +7,7 @@ from mux.cascaded_mux import CascadedMux
 from motion.profiles.mux import build_motion
 from gpio import pin_assignments as PINS
 
-def build_engine():
+def build_engine() -> BaseAcquisitionEngine:
     serial_port1 = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A90KFA3G-if00-port0"
     serial_port2 = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9C7BUGI-if00-port0"
 

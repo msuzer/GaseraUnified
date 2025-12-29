@@ -1,7 +1,10 @@
 from flask import Blueprint, jsonify, request, Response
+from gasera.acquisition.motor import MotorAcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine
 from system.preferences import prefs
 from system.log_utils import debug, info, warn, error
 from system import services
+from composition import engine
 
 from system.preferences import (
     KEY_INCLUDE_CHANNELS,
@@ -221,3 +224,20 @@ def set_buzzer_state() -> tuple[Response, int]:
     except Exception as e:
         error(f"[BUZZER] set_buzzer_state error: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+@system_bp.get("/profile")
+def get_selected_profile():
+    """
+    One-time UI bootstrap endpoint.
+    Returns the selected acquisition profile based on instantiated engine object.
+    """
+    if engine is None:
+        return jsonify({"ok": True, "profile": "none"}), 200
+
+    if isinstance(engine, MotorAcquisitionEngine):
+        return jsonify({"ok": True, "profile": "motor"}), 200
+
+    if isinstance(engine, MuxAcquisitionEngine):
+        return jsonify({"ok": True, "profile": "mux"}), 200
+
+    return jsonify({"ok": True, "profile": "unknown"}), 200

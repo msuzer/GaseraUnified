@@ -105,17 +105,6 @@ function attachJogButtons() {
   });
 }
 
-let motorPollingTimer = null;
-let motorServiceAvailable = true;
-
-function stopMotorPolling() {
-  if (motorPollingTimer !== null) {
-    clearInterval(motorPollingTimer);
-    motorPollingTimer = null;
-    console.info("[MOTOR] Polling stopped");
-  }
-}
-
 function motorStatusClass(status) {
   switch (status) {
     case "idle":
@@ -147,41 +136,15 @@ function updateMotorBadge(motorId, state) {
   }
 }
 
-function updateMotorStatus() {
-  if (!motorServiceAvailable) {
-    return;
-  }
+function onMotorStatusFromSSE(d) {
+  if (!d || !d.motor_status) return;
 
-  safeFetch(API_PATHS?.motor?.status)
-    .then(response => {
-      if (response.status === 503) {
-        // Motor service explicitly not available
-        motorServiceAvailable = false;
-        window.switchToMuxMode?.();
-        stopMotorPolling();
-        throw new Error("motor-service-unavailable");
-      }
+  // motor_status can be {0:..., 1:...} OR {error:true}
+  const ms = d.motor_status;
+  if (ms.error) return;
 
-      if (!response.ok) {
-        throw new Error(`motor-status-http-${response.status}`);
-      }
-
-      return response.json();
-    })
-    .then(data => {
-      window.switchToMotorMode?.();
-      updateMotorBadge("0", data["0"]);
-      updateMotorBadge("1", data["1"]);
-    })
-    .catch(err => {
-      if (err.message === "motor-service-unavailable") {
-        console.info("[MOTOR] Service not available, UI disabled");
-        return;
-      }
-
-      // Other errors are logged but do NOT stop polling
-      console.warn("[MOTOR] Status error:", err.message);
-    });
+  updateMotorBadge("0", ms["0"]);
+  updateMotorBadge("1", ms["1"]);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -190,9 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   attachJogButtons();
 
-  // Initial probe
-  updateMotorStatus();
-
-  // Start polling only if service still available
-  motorPollingTimer = setInterval(updateMotorStatus, 1500);
+  // SSE-driven motor status (no polling)
+  window.GaseraHub?.subscribe(onMotorStatusFromSSE);
 });
