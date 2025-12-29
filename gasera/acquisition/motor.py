@@ -164,7 +164,6 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             self.progress.repeat_index = rep + 1  # completed cycles count
             self._emit_progress_event()
             services.buzzer.play("completed")
-            return True
 
         finally:
             if not self._stop_measurement():
@@ -173,11 +172,12 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             # Accumulate completed (or partial) cycle time
             if self._cycle_start_timestamp is not None:
                 self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
-            self._cycle_start_timestamp = None
+            # self._cycle_start_timestamp = None
             # Between cycles we show 0/TT (armed)
             self.progress.elapsed_seconds = 0.0
-
             self._cycle_in_progress = False
+            
+        return True
 
     def _run_actuator_sequence(self, actuator_id: str) -> bool:
         """
@@ -287,7 +287,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
     def _finalize_run(self) -> None:
         if self._cycle_start_timestamp is not None:
-            self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
+            # self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
             self._cycle_start_timestamp = None
             self.progress.elapsed_seconds = float(self._accumulated_seconds)
             self.progress.tt_seconds = float(self._accumulated_seconds)
