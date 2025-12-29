@@ -4,10 +4,10 @@ import threading
 import time
 from typing import Dict, Any
 
-from system.log_utils import debug, warn
+from system.log_utils import debug
 from system.preferences import prefs, KEY_BUZZER_ENABLED
 from gasera.controller import gasera
-from .storage_utils import check_usb_change
+from gasera.storage_utils import check_usb_change
 
 """
 Device Status Service (refactored)

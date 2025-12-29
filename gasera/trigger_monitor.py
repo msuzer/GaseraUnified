@@ -3,9 +3,9 @@ import threading
 from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
-from system.log_utils import error, verbose, info, warn, debug
+from system.log_utils import error, verbose, warn, debug
 from gpio.gpio_control import gpio
-from gpio.pin_assignments import TRIGGER_PIN
+from gpio import pin_assignments as PINS
 
 class TriggerMonitor:
     """
@@ -34,8 +34,8 @@ class TriggerMonitor:
             debug("[TRIGGER] Already started; skipping duplicate init")
             return
         try:
-            debug(f"[TRIGGER] Edge monitoring started on {TRIGGER_PIN}")
-            gpio.watch(TRIGGER_PIN, self._on_edge, edge="both")
+            debug(f"[TRIGGER] Edge monitoring started on {PINS.TRIGGER_PIN}")
+            gpio.watch(PINS.TRIGGER_PIN, self._on_edge, edge="both")
             self._started = True
         except OSError as e:
             if e.errno == 16:
@@ -137,7 +137,7 @@ class TriggerMonitor:
                         warn(f"[TRIGGER] Finish rejected: {msg}")
                 elif isinstance(self.engine, MuxAcquisitionEngine):
                     debug("[TRIGGER] Long press → Abort measurement")
-                    ok, msg = self.engine.stop()
+                    ok, msg = self.engine.abort()
                     if not ok:
                         warn(f"[TRIGGER] Abort rejected: {msg}")
                 else:

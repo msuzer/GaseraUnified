@@ -1,5 +1,5 @@
 import smbus2
-from .log_utils import debug, info, warn, error
+from .log_utils import debug, info, warn
 from PIL import Image, ImageDraw, ImageFont
 
 # ----------------------------------------------------------------------

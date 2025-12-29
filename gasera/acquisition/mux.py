@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 from gasera.acquisition.task_event import TaskEvent
 from motion.iface import MotionInterface
-from system.log_utils import debug, info, warn, error
+from system.log_utils import debug, info, warn
 from system.preferences import prefs
 from system import services
 

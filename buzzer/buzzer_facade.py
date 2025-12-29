@@ -1,11 +1,10 @@
 # buzzer_facade.py
 import threading
 import asyncio
-import atexit
 from typing import Optional
 from .async_buzzer import AsyncBuzzer
 from system.preferences import prefs, KEY_BUZZER_ENABLED
-from system.log_utils import debug, info, warn
+from system.log_utils import debug, warn
 
 # Create the async engine here
 engine = AsyncBuzzer(

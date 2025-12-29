@@ -4,7 +4,7 @@ import serial
 
 from mux.iface import MuxInterface
 from mux.protocol_vici_uma import ViciUMAProtocol
-from system.log_utils import warn, error
+from system.log_utils import error
 
 
 class ViciUMAMux(MuxInterface):

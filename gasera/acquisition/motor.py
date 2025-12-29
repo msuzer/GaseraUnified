@@ -10,7 +10,7 @@ from typing import Optional
 
 from gasera.acquisition.task_event import TaskEvent
 from motion.iface import MotionInterface
-from system.log_utils import debug, info, warn, error
+from system.log_utils import debug, info, warn
 from system.preferences import prefs
 from system import services
 
@@ -47,6 +47,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._cycle_processed = 0  # completed actuator measurements in current cycle
         self._cycle_start_timestamp: Optional[float] = None
         self._accumulated_seconds: float = 0.0
+        self._armed_waiting_for_repeat = False
 
     def _start_ok_message(self) -> str:
         return "Engine started (waiting for repeat trigger)"
@@ -84,6 +85,10 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         # unblock wait()
         self._repeat_event.set()
 
+    def _can_finish_now(self) -> bool:
+        info("[ENGINE] checking armed state within motor engine")
+        return self._armed_waiting_for_repeat
+
     def trigger_repeat(self) -> tuple[bool, str]:
         if not self.is_running():
             return False, "Engine is not running"
@@ -109,8 +114,10 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             self._set_phase(Phase.ARMED)
             self._emit_task_event(TaskEvent.WAITING_FOR_TRIGGER)
 
+            self._armed_waiting_for_repeat = True
             self._repeat_event.wait()
             self._repeat_event.clear()
+            self._armed_waiting_for_repeat = False
 
             if self._stop_event.is_set() or self._finish_event.is_set():
                 break
@@ -293,3 +300,4 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             self.progress.tt_seconds = float(self._accumulated_seconds)
             
         info("[ENGINE] finalizing motor measurement task")
+        

@@ -1,7 +1,6 @@
 import re, shlex, subprocess, time
 from pathlib import Path
 
-from system import services
 from .log_utils import debug, info, warn, error
 
 APP_DIR = Path("/opt/GaseraMux")
@@ -77,8 +76,6 @@ def _restart_service(reason: str = ""):
     # Local UX feedback (safe: happens before process dies)
     try:
         from system import services
-        import time
-
         services.buzzer.play("service_restart")
         services.display_controller.show(
             services.display_adapter.info("Version Manager:", "Restarting Service...")

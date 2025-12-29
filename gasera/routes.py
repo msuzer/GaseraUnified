@@ -82,7 +82,7 @@ def measurement_repeat():
 @gasera_bp.route("/api/measurement/abort", methods=["POST"])
 def abort_measurement() -> tuple[Response, int]:
     warn("[MEAS] Abort requested")
-    ok, msg = engine.stop()
+    ok, msg = engine.abort()
     if not ok:
         debug(f"[MEAS] abort ignored {msg}")
         return jsonify({"ok": False, "message": msg}), 200

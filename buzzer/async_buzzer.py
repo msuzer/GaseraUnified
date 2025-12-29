@@ -15,10 +15,10 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 from gpio.gpio_control import gpio
 from gpio import pin_assignments as PINS
-from system.log_utils import debug, info, warn
+from system.log_utils import debug, info
 
 # ----------------------------- Types -----------------------------------------
 Pulse = Tuple[float, float]  # (on_seconds, off_seconds)

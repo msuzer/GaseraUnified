@@ -1,13 +1,10 @@
-from typing import Optional
 from gasera.acquisition.phase import Phase
-
 
 class Progress:
     """
     Frontend contract (keep stable).
     Snapshot-safe: do NOT add non-serializable fields.
     """
-
     def __init__(self):
         self.reset_all()
 
@@ -39,4 +36,8 @@ class Progress:
         self.tt_seconds = None
 
     def to_dict(self) -> dict:
+        """
+        Serialize progress to dict.
+        Snapshot-safe: do NOT add non-serializable fields.
+        """
         return dict(self.__dict__)

@@ -1,9 +1,8 @@
-from typing import Any, Dict, Optional
-from .protocol import GaseraProtocol, DeviceStatus, ErrorList, TaskList, ACONResult, MeasurementStatus, DeviceName, IterationNumber, NetworkSettings, DateTimeResult
-from .protocol import DeviceInfo, SelfTestResult, TaskParameters, SystemParameters, SamplerParameters, ParameterValue
-from .gas_info import get_gas_name, get_color_for_cas, get_cas_details
-from . import tcp_client  # import module to observe runtime-initialized global
-from system.log_utils import debug, info, warn
+from typing import Optional
+from gasera.protocol import GaseraProtocol, DeviceStatus, ErrorList, TaskList, ACONResult, MeasurementStatus, DeviceName, IterationNumber, NetworkSettings, DateTimeResult
+from gasera.gas_info import get_gas_name, get_color_for_cas, get_cas_details
+from gasera import tcp_client  # import module to observe runtime-initialized global
+from system.log_utils import debug, warn
 
 # Top-level (above GaseraController)
 class TaskIDs:

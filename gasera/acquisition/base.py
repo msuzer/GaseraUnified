@@ -128,7 +128,7 @@ class BaseAcquisitionEngine(ABC):
 
             return True, self._start_ok_message()
 
-    def stop(self) -> tuple[bool, str]:
+    def abort(self) -> tuple[bool, str]:
         # Forcefully stop the current task.
         if self.is_running():
             self._stop_event.set()
@@ -137,14 +137,20 @@ class BaseAcquisitionEngine(ABC):
             return True, "Aborted successfully"
         return False, "Not running"
 
-    def finish(self) -> tuple[bool, str]:
+    def finish(self):
         # Gracefully finish the current task.
-        if self.is_running():
-            self._finish_event.set()
-            self._on_stop_unblock()
-            self._worker.join(timeout=2.0)
-            return True, "Finished successfully"
-        return False, "Not running"
+        if not self._can_finish_now():
+            return False, "Finish not allowed in current state"
+
+        self._finish_event.set()
+        self._on_stop_unblock()
+        self._worker.join(timeout=2.0)
+        return True, "Finished successfully"
+
+    def _can_finish_now(self) -> bool:
+        # motor will override
+        info("[ENGINE] checking armed state within base engine")
+        return False
 
     def is_running(self) -> bool:
         return bool(self._worker) and self._worker.is_alive()

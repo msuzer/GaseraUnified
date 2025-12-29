@@ -7,7 +7,7 @@ import time
 import random
 from threading import RLock
 from typing import Optional, Callable
-from system.log_utils import verbose, debug, info, warn, error
+from system.log_utils import verbose, debug, warn, error
 
 # Timing constants
 COMMAND_JITTER_MAX = 0.12  # max seconds of random jitter to avoid phase-locking with device

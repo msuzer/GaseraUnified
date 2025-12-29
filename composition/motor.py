@@ -6,18 +6,12 @@ from motor.gpio_motor import GPIOMotor
 from motor.motor_control import MotorController
 from motion.profiles.motor import build_motion
 from system import services
-
-from gpio.pin_assignments import (
-    MOTOR0_CW_PIN, MOTOR0_CCW_PIN,
-    MOTOR1_CW_PIN, MOTOR1_CCW_PIN,
-    BOARD_IN1_PIN, BOARD_IN2_PIN,
-    BOARD_IN3_PIN, BOARD_IN4_PIN,
-)
+from gpio import pin_assignments as PINS
 
 def build_engine():
     motors = MotorBank({
-        "0": GPIOMotor(MOTOR0_CW_PIN, MOTOR0_CCW_PIN),
-        "1": GPIOMotor(MOTOR1_CW_PIN, MOTOR1_CCW_PIN),
+        "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
+        "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
     })
 
     services.motor_controller = MotorController(motors)
@@ -25,10 +19,10 @@ def build_engine():
     button_monitor = MotorButtonMonitor(
         motor_ctrl=services.motor_controller,
         pin_map={
-            "M0_CW":  (BOARD_IN1_PIN, ("0", "cw")),
-            "M0_CCW": (BOARD_IN2_PIN, ("0", "ccw")),
-            "M1_CW":  (BOARD_IN3_PIN, ("1", "cw")),
-            "M1_CCW": (BOARD_IN4_PIN, ("1", "ccw")),
+            "M0_CW":  (PINS.BOARD_IN1_PIN, ("0", "cw")),
+            "M0_CCW": (PINS.BOARD_IN2_PIN, ("0", "ccw")),
+            "M1_CW":  (PINS.BOARD_IN3_PIN, ("1", "cw")),
+            "M1_CCW": (PINS.BOARD_IN4_PIN, ("1", "ccw")),
         },
         debounce_ms=50,
     )

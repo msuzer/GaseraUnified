@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from system.log_utils import debug, info
+from system.log_utils import debug
 from system.services import motor_controller as motor
 
 motor_bp = Blueprint("motor", __name__)
