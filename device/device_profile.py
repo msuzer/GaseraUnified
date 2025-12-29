@@ -7,4 +7,3 @@ class Device(Enum):
 
 # CHANGE THIS PER TARGET
 DEVICE = Device.MUX
-# DEVICE = Device.MOTOR
