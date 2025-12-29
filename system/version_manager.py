@@ -1,7 +1,7 @@
 import re, shlex, subprocess, time
 from pathlib import Path
 
-from .log_utils import debug, info, warn, error
+from system.log_utils import debug, info, warn, error
 
 APP_DIR = Path("/opt/GaseraMux")
 CONFIG_DIR = APP_DIR / "config"

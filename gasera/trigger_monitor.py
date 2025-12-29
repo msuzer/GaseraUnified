@@ -4,8 +4,8 @@ from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
 from system.log_utils import error, verbose, warn, debug
-from gpio.gpio_control import gpio
-from gpio import pin_assignments as PINS
+from system.gpio.gpio_control import gpio
+from system.gpio import pin_assignments as PINS
 
 class TriggerMonitor:
     """

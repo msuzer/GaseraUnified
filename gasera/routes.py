@@ -1,20 +1,20 @@
 from flask import Blueprint, jsonify, Response, stream_with_context, request
-from gasera.motor_status_service import get_motor_snapshots
+from gasera.sse.motor_status_service import get_motor_snapshots
 from system import services
 from system.preferences import prefs
 from system.log_utils import verbose, debug, info, warn, error
 from gasera.trigger_monitor import TriggerMonitor
 from gasera import gas_info
-from gasera.sse_utils import SseDeltaTracker
-from composition import engine
+from gasera.sse.utils import SseDeltaTracker
+from system.services import engine_service as engine
 
-from gasera.live_status_service import (
+from gasera.sse.live_status_service import (
     init as live_attach,
     start_background_updater,
     get_live_snapshots,
 )
 
-from gasera.device_status_service import (
+from gasera.sse.device_status_service import (
     get_device_snapshots,
     clear_buzzer_change,
     start_device_status_poller

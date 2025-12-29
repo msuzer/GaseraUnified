@@ -2,8 +2,8 @@
 import time
 import serial
 
-from mux.iface import MuxInterface
-from mux.protocol_vici_uma import ViciUMAProtocol
+from system.mux.iface import MuxInterface
+from system.mux.protocol_vici_uma import ViciUMAProtocol
 from system.log_utils import error
 
 

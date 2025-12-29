@@ -1,10 +1,10 @@
 # log_utils.py
 from __future__ import annotations
+import pathlib
 import logging, sys, time
 from typing import Any, Dict
-from .config import PROJECT_ROOT
-import pathlib
-from .config import CONFIG  # single source of truth
+from system.config import PROJECT_ROOT
+from system.config import CONFIG  # single source of truth
 
 # ---------- Levels ----------
 SILENT   = 100

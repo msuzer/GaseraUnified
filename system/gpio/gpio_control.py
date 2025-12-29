@@ -96,7 +96,7 @@ after select_profile() in device init.
 def initialize_outputs():
     """Initialize output pins to LOW based on current profile."""
     # Import pins at call time to pick up selected profile
-    from gpio.pin_assignments import (
+    from system.gpio.pin_assignments import (
         BUZZER_PIN, OC1_PIN, OC2_PIN, OC3_PIN, OC4_PIN, OC5_PIN,
         MOTOR0_CW_PIN, MOTOR0_CCW_PIN, MOTOR1_CW_PIN, MOTOR1_CCW_PIN,
     )

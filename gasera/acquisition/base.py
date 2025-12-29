@@ -14,14 +14,13 @@ import time
 from abc import ABC, abstractmethod
 from typing import List, Optional, Callable
 
-from gasera.device_status_service import get_latest_gasera_status
-from motion.iface import MotionInterface
+from gasera.sse.device_status_service import get_latest_gasera_status
+from gasera.motion.iface import MotionInterface
 
 from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
 from system.preferences import prefs
 from gasera.controller import gasera, TaskIDs
-from system import services
 from gasera.measurement_logger import MeasurementLogger
 from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase

@@ -18,8 +18,8 @@ USER="www-data"
 # --------------------------------------------------------------
 set_device_profile() {
   local DEVICE_CHOICE="$1"
-  local PROFILE_FILE="$APP_DIR/device/device_profile.py"
-  local TEMPLATE_FILE="$APP_DIR/device/device_profile.py.template"
+  local PROFILE_FILE="$APP_DIR/system/device/device_profile.py"
+  local TEMPLATE_FILE="$APP_DIR/system/device/device_profile.py.template"
 
   if [[ ! "$DEVICE_CHOICE" =~ ^(MUX|MOTOR)$ ]]; then
     echo "❌ Invalid DEVICE: $DEVICE_CHOICE (must be MUX or MOTOR)"

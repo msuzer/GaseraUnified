@@ -4,7 +4,7 @@ import time
 from typing import Optional
 
 from system.display.display_state import DisplayState
-from system.display_driver import DisplayDriver
+from system.display.display_driver import DisplayDriver
 
 class DisplayController:
     def __init__(self, driver: DisplayDriver):

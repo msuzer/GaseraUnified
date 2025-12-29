@@ -2,7 +2,7 @@
 set -e
 
 PROFILE="$1"
-FILE="/opt/GaseraMux/device/device_profile.py"
+FILE="/opt/GaseraMux/system/device/device_profile.py"
 
 # --------------------------------------------------------------
 # Require root

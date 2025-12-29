@@ -1,5 +1,5 @@
 import time
-from gpio.gpio_control import gpio
+from system.gpio.gpio_control import gpio
 
 
 class GPIOMotor:

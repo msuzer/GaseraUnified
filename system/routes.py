@@ -4,7 +4,7 @@ from gasera.acquisition.mux import MuxAcquisitionEngine
 from system.preferences import prefs
 from system.log_utils import debug, info, warn, error
 from system import services
-from composition import engine
+from system.services import engine_service as engine
 
 from system.preferences import (
     KEY_INCLUDE_CHANNELS,

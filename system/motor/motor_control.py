@@ -1,7 +1,7 @@
 import time
 from threading import Thread, RLock
 from system.preferences import prefs, KEY_MOTOR_TIMEOUT
-from motor.bank import MotorBank
+from system.motor.bank import MotorBank
 
 DEFAULT_MOTOR_TIMEOUT = 10          # seconds
 

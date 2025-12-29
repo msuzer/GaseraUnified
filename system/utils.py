@@ -2,7 +2,7 @@ from datetime import datetime
 import socket
 import subprocess
 
-from gasera.device_status_service import get_latest_gasera_status
+from gasera.sse.device_status_service import get_latest_gasera_status
 
 def get_ip_address():
     try:

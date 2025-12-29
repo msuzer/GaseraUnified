@@ -2,7 +2,7 @@
 import threading
 import asyncio
 from typing import Optional
-from .async_buzzer import AsyncBuzzer
+from system.buzzer.async_buzzer import AsyncBuzzer
 from system.preferences import prefs, KEY_BUZZER_ENABLED
 from system.log_utils import debug, warn
 

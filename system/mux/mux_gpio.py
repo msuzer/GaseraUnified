@@ -1,7 +1,7 @@
 # mux/mux_gpio.py
 import time
-from mux.iface import MuxInterface
-from gpio.gpio_control import gpio
+from system.mux.iface import MuxInterface
+from system.gpio.gpio_control import gpio
 
 
 class GPIOMux(MuxInterface):

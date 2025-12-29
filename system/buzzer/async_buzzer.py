@@ -16,8 +16,8 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple, Union
-from gpio.gpio_control import gpio
-from gpio import pin_assignments as PINS
+from system.gpio.gpio_control import gpio
+from system.gpio import pin_assignments as PINS
 from system.log_utils import debug, info
 
 # ----------------------------- Types -----------------------------------------

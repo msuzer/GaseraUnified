@@ -1,13 +1,13 @@
 # composition/motor.py
 from gasera.acquisition.base import BaseAcquisitionEngine
 from gasera.acquisition.motor import MotorAcquisitionEngine as AcquisitionEngine
-from motor.bank import MotorBank
-from motor.button_monitor import MotorButtonMonitor
-from motor.gpio_motor import GPIOMotor
-from motor.motor_control import MotorController
-from motion.profiles.motor import build_motion
+from gasera.motion.motor_motion import MotorMotion
+from system.motor.bank import MotorBank
+from system.motor.button_monitor import MotorButtonMonitor
+from system.motor.gpio_motor import GPIOMotor
+from system.motor.motor_control import MotorController
 from system import services
-from gpio import pin_assignments as PINS
+from system.gpio import pin_assignments as PINS
 
 def build_engine() -> BaseAcquisitionEngine:
     motors = MotorBank({
@@ -29,6 +29,6 @@ def build_engine() -> BaseAcquisitionEngine:
     )
     button_monitor.start()
 
-    motion = build_motion(motors=motors)
+    motion = MotorMotion(motors)
 
     return AcquisitionEngine(motion)
