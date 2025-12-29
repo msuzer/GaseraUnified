@@ -92,13 +92,13 @@ class DisplayAdapter:
             self._controller.show(self._running())
 
         elif event == TaskEvent.TASK_FINISHED:
-            self._controller.show(self._summary())
+            self._controller.show(self._summary("MEASUREMENT DONE"))
 
         elif event == TaskEvent.TASK_ABORTED:
-            self._controller.show(self._error("TASK ABORTED"))
+            self._controller.show(self._summary("TASK ABORTED"))
 
         elif event == TaskEvent.ERROR:
-            self._controller.show(self._error("ERROR"))
+            self._controller.show(self._summary("ERROR"))
 
     # ------------------------------------------------------------------
     # Static screens (no progress dependency)
@@ -133,13 +133,13 @@ class DisplayAdapter:
             lines=[],
         )
         
-    def _summary(self) -> DisplayState:
+    def _summary(self, title: str) -> DisplayState:
         lines = []
         if self._last_progress:
             pv = ProgressView(self._last_progress)
             if pv:
-                if pv.channel_step_label:
-                    lines.append(pv.channel_step_label)
+                if pv.step_done_label:
+                    lines.append(pv.step_done_label)
                 if pv.duration_label:
                     lines.append(pv.duration_label)
 
@@ -147,26 +147,6 @@ class DisplayAdapter:
 
         return DisplayState(
             screen="summary",
-            header="MEASUREMENT DONE",
-            lines=lines,
-            ttl_seconds=10,
-            return_to="idle",
-        )
-
-    def _error(self, title: str) -> DisplayState:
-        lines = []
-        if self._last_progress:
-            pv = ProgressView(self._last_progress)
-            if pv:
-                if pv.channel_step_label:
-                    lines.append(pv.channel_step_label)
-                if pv.duration_label:
-                    lines.append(pv.duration_label)
-
-        lines.append(f"T: {get_formatted_timestamp()}")
-        
-        return DisplayState(
-            screen="error",
             header=title,
             lines=lines,
             ttl_seconds=10,

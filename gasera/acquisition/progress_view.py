@@ -13,6 +13,22 @@ class ProgressView:
     # Channels / Steps
     # -----------------------------
     @property
+    def step_done_label(self) -> Optional[str]:
+        if self.p is None or self.p.step_index is None:
+            return None
+
+        has_total_steps = self.p.total_steps is not None and self.p.total_steps > 0
+
+        current_step = self.p.step_index + 1        
+        if has_total_steps:
+            current_step = min(current_step, self.p.total_steps) # cap it to total_steps if known
+            step_str = f"{current_step}/{self.p.total_steps}"
+        else:
+            step_str = f"{current_step}"
+        
+        return f"Done: {step_str} steps"
+
+    @property
     def channel_step_label(self) -> Optional[str]:
         if self.p is None or self.p.current_channel is None or self.p.step_index is None:
             return None
