@@ -13,29 +13,34 @@ class SseDeltaTracker:
     def __init__(self) -> None:
         self._last_live_data: Dict[str, Any] | None = None
         self._last_device_status: Dict[str, Any] | None = None
+        self._last_motor_status: Dict[str, Any] | None = None
 
     def build(
         self,
         progress: Dict[str, Any] | None,
         live_data: Dict[str, Any] | None,
         device_status: Dict[str, Any] | None,
-        task_event: dict | None = None
+        motor_status: Dict[str, Any] | None,
     ) -> Dict[str, Any]:
         """Return SSE state including only changed fields along with current progress."""
         # Determine diffs
         device_changed = device_status is not None and device_status != self._last_device_status
         live_data_changed = bool(live_data) and live_data != self._last_live_data
+        motor_changed = motor_status is not None and motor_status != self._last_motor_status
 
         if device_changed:
             self._last_device_status = device_status
         if live_data_changed:
             self._last_live_data = live_data
+        if motor_changed:
+            self._last_motor_status = motor_status
         
         # Only include changed snapshots; progress is always included
         return SseDeltaTracker.build_state(
             progress,
             device_status if device_changed else None,
-            live_data if live_data_changed else None
+            live_data if live_data_changed else None,
+            motor_status if motor_changed else None
         )
 
     @staticmethod
@@ -43,6 +48,7 @@ class SseDeltaTracker:
         progress: Dict[str, Any] | None,
         device_status: Dict[str, Any] | None,
         live_data: Dict[str, Any] | None,
+        motor_status: Dict[str, Any] | None
     ) -> Dict[str, Any]:
         """
         Assemble SSE state payload from component snapshots.
@@ -65,6 +71,9 @@ class SseDeltaTracker:
         # Only include live_data when present (new measurement)
         if live_data is not None and live_data:  # Non-empty dict
             state["live_data"] = live_data
+
+        if motor_status is not None:
+            state["motor_status"] = motor_status
 
         # Marker is embedded by device_status_service; no need to set here.
 

@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, Response, stream_with_context, request
+from gasera.motor_status_service import get_motor_snapshots
 from system import services
 from system.preferences import prefs
 from system.log_utils import verbose, debug, info, warn, error
@@ -116,8 +117,9 @@ def sse_events() -> Response:
             try:
                 _progress, _live_data = get_live_snapshots()
                 _device_status = get_device_snapshots()
+                _motor_status = get_motor_snapshots()
 
-                state = tracker.build(_progress, _live_data, _device_status)
+                state = tracker.build(_progress, _live_data, _device_status, _motor_status)
                 payload = json.dumps(state, sort_keys=True)
                 if payload != last_payload:
                     yield f"data: {payload}\n\n"
