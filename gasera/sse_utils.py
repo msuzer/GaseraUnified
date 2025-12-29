@@ -13,7 +13,6 @@ class SseDeltaTracker:
     def __init__(self) -> None:
         self._last_live_data: Dict[str, Any] | None = None
         self._last_device_status: Dict[str, Any] | None = None
-        self._last_task_event = None
 
     def build(
         self,
@@ -26,22 +25,17 @@ class SseDeltaTracker:
         # Determine diffs
         device_changed = device_status is not None and device_status != self._last_device_status
         live_data_changed = bool(live_data) and live_data != self._last_live_data
-        task_event_changed = task_event is not None and task_event != self._last_task_event
 
         if device_changed:
             self._last_device_status = device_status
         if live_data_changed:
             self._last_live_data = live_data
         
-        if task_event_changed:
-            self._last_task_event = task_event
-
         # Only include changed snapshots; progress is always included
         return SseDeltaTracker.build_state(
             progress,
             device_status if device_changed else None,
-            live_data if live_data_changed else None,
-            task_event if task_event_changed else None,
+            live_data if live_data_changed else None
         )
 
     @staticmethod
@@ -49,7 +43,6 @@ class SseDeltaTracker:
         progress: Dict[str, Any] | None,
         device_status: Dict[str, Any] | None,
         live_data: Dict[str, Any] | None,
-        task_event: dict | None = None
     ) -> Dict[str, Any]:
         """
         Assemble SSE state payload from component snapshots.
@@ -72,10 +65,6 @@ class SseDeltaTracker:
         # Only include live_data when present (new measurement)
         if live_data is not None and live_data:  # Non-empty dict
             state["live_data"] = live_data
-
-        # Only include task_event when present (new event)
-        if task_event is not None:
-            state["task_event"] = task_event
 
         # Marker is embedded by device_status_service; no need to set here.
 

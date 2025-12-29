@@ -83,7 +83,7 @@ class DisplayAdapter:
         DisplayEvent is the ONLY authority allowed to change screens.
         """
         if event == TaskEvent.TASK_STARTED:
-            self._controller.show(self._idle())
+            self._controller.show(self._running())
 
         elif event == TaskEvent.WAITING_FOR_TRIGGER:
             self._controller.show(self._armed())

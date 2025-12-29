@@ -184,7 +184,7 @@ def get_buzzer_state() -> tuple[Response, int]:
     Falls back to stored preference if not yet set.
     """
     try:
-        enabled = getattr(buzzer, "enabled", None)
+        enabled = getattr(services.buzzer, "enabled", None)
         if enabled is None:
             enabled = prefs.get(KEY_BUZZER_ENABLED, True)
         return jsonify({"ok": True, "enabled": bool(enabled)}), 200
@@ -208,10 +208,10 @@ def set_buzzer_state() -> tuple[Response, int]:
     enabled = bool(data["enabled"])
     try:
         # Live update
-        if hasattr(buzzer, "set_enabled"):
-            buzzer.set_enabled(enabled)
+        if hasattr(services.buzzer, "set_enabled"):
+            services.buzzer.set_enabled(enabled)
         else:
-            buzzer.enabled = enabled
+            services.buzzer.enabled = enabled
 
         # Persist to preferences
         prefs.update_from_dict({KEY_BUZZER_ENABLED: enabled}, write_disk=True)
