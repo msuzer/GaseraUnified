@@ -21,69 +21,53 @@ let countdown = START_DELAY;
 // ============================================================
 window.isEngineStarted = false;
 
-window.isMotorMode = () => window.UI_CAPS?.motor === true;
-window.isMuxMode = () => window.UI_CAPS?.mux === true;
-
-window.isMotorArmed = (phase) =>
-  window.isMotorMode() &&
-  phase === window.PHASE.IDLE &&
-  window.isEngineStarted === true;
-
 // ============================================================
 // Phase Handling & UI Updates
 // ============================================================
 function applyPhase(phase) {
+  btnStart.disabled = true;
+  btnRepeat.disabled = true;
+  btnFinish.disabled = true;
+  btnAbort.disabled = true;
+  btnStart.classList.remove("btn-success", "btn-warning");
+
+  btnStart.dataset.previousPhase = btnStart.dataset.phase || null;
+  btnStart.dataset.phase = phase;
+
+  // START button
+  if (window.isEnginePassive(phase)) {
+    btnStart.disabled = false;
+    btnStart.textContent = "Start Measurement";
+    btnStart.classList.add("btn-success");
+  } else if (window.isEngineArmed(phase)) {
+    btnStart.disabled = true;
+    btnStart.textContent = "Waiting for Trigger";
+    btnStart.classList.add("btn-warning");
+  } else if (window.isEngineActive(phase)) {
+    btnStart.disabled = true;
+    btnStart.classList.add("btn-warning");
+    // text will be refined by updateButtonText()
+  }
+
+  // REPEAT and FINISH buttons
+  if (window.isEngineArmed(phase)) {
+    btnRepeat.disabled = false;
+    btnFinish.disabled = false;
+  }
+
+  // ABORT button
+  if (window.isEngineArmed(phase) || window.isEngineActive(phase)) {
+    btnAbort.disabled = false;
+  }
+
+  window.lockPreferenceInputs?.(!window.isEnginePassive(phase));
+
+  // Cancel countdown if phase changed away from IDLE
   if (countdownTimer && phase !== window.PHASE.IDLE) {
     clearInterval(countdownTimer);
     countdownTimer = null;
     countdown = START_DELAY;
   }
-
-  const isRunning = window.isActivePhase(phase);
-
-  // Update button states
-  btnStart.disabled = true;
-  btnStart.dataset.previousPhase = btnStart.dataset.phase || null;
-  btnStart.dataset.phase = phase;
-  btnStart.classList.remove("btn-success", "btn-warning");
-
-  if (phase === window.PHASE.ABORTED) {
-    btnStart.textContent = "Start Measurement";
-    btnStart.className = "btn btn-success btn-lg px-5";
-    btnStart.disabled = false;
-
-    btnRepeat.classList.add("d-none");
-    window.isEngineStarted = false;
-  }
-
-  else if (window.isMotorArmed(phase)) {
-    // MOTOR: engine running, waiting for user
-    btnStart.textContent = "Awaiting Repeat Trigger";
-    btnStart.className = "btn btn-warning btn-lg px-5";
-    btnStart.disabled = true;
-
-    btnRepeat.classList.remove("d-none");
-    btnRepeat.disabled = false;
-  }
-
-  else if (phase === window.PHASE.IDLE) {
-    // MUX idle
-    btnStart.textContent = "Start Measurement";
-    btnStart.className = "btn btn-success btn-lg px-5";
-    btnStart.disabled = false;
-
-    btnRepeat.classList.add("d-none");
-  }
-
-
-  btnAbort.disabled = !(
-    window.isMeasurementRunning ||
-    window.isMotorArmed(phase)
-  );
-
-
-  // Lock/unlock preference inputs
-  window.lockPreferenceInputs?.(isRunning);
 }
 
 // ============================================================
@@ -288,17 +272,17 @@ function SSEHandler(d) {
     if (phaseChanged) {
       applyPhase(newPhase);
       window.updateJarColors?.(ch, newPhase);
-      window.isMeasurementRunning = window.isActivePhase(newPhase);
+      window.isMeasurementRunning = window.isEngineActive(newPhase);
       window.updateGridLock?.();
 
-      if (window.isActivePhase(newPhase)) {
+      if (window.isEngineActive(newPhase)) {
         window.updateETTTDisplay?.();
       }
 
       // Show completion/abort notifications
-      if (newPhase === window.PHASE.ABORTED) {
+      if (window.taskAborted(newPhase)) {
         window.showMeasurementSummaryToast?.("Measurement Aborted", stepIndex, totalSteps, "danger");
-      } else if (currentPhase === window.PHASE.SWITCHING && newPhase === window.PHASE.IDLE) {
+      } else if (window.taskCompleted(currentPhase, newPhase)) {
         window.showMeasurementSummaryToast?.("Measurement Complete", totalSteps, totalSteps, "success");
       }
 

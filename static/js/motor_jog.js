@@ -116,40 +116,6 @@ function stopMotorPolling() {
   }
 }
 
-function show(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove("d-none");
-}
-
-function hide(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add("d-none");
-}
-
-function onMotorServiceAvailable() {
-  window.UI_CAPS.motor = true;
-  window.UI_CAPS.mux = false;
-  show("motor-jog-card");          // actuator
-  show("motor-timeout-block");     // actuator
-  show("btnRepeat");               // actuator
-  show("btnFinish");               // actuator
-
-  hide("channel-selection-card");  // mux-only
-  hide("repeat-count-block");      // mux-only
-}
-
-function onMotorServiceUnavailable() {
-  window.UI_CAPS.motor = false;
-  window.UI_CAPS.mux = true;
-  hide("motor-jog-card");
-  hide("motor-timeout-block");
-  hide("btnRepeat");
-  hide("btnFinish");
-
-  show("channel-selection-card");
-  show("repeat-count-block");
-}
-
 function motorStatusClass(status) {
   switch (status) {
     case "idle":
@@ -191,7 +157,7 @@ function updateMotorStatus() {
       if (response.status === 503) {
         // Motor service explicitly not available
         motorServiceAvailable = false;
-        onMotorServiceUnavailable();
+        window.switchToMuxMode?.();
         stopMotorPolling();
         throw new Error("motor-service-unavailable");
       }
@@ -203,7 +169,7 @@ function updateMotorStatus() {
       return response.json();
     })
     .then(data => {
-      onMotorServiceAvailable();
+      window.switchToMotorMode?.();
       updateMotorBadge("0", data["0"]);
       updateMotorBadge("1", data["1"]);
     })

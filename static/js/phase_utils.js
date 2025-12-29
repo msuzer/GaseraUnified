@@ -8,6 +8,7 @@
 // ============================================================
 const PHASE = {
   IDLE: "IDLE",
+  ARMED: "READY",
   HOMING: "HOMING",
   MEASURING: "MEASURING",
   PAUSED: "PAUSED",
@@ -21,27 +22,29 @@ window.PHASE = PHASE;
 // Phase Helpers
 // ============================================================
 
-/**
- * Check if phase is active (measurement in progress)
- */
-function isActivePhase(phase) {
-  return phase === PHASE.MEASURING || phase === PHASE.PAUSED || 
-         phase === PHASE.SWITCHING || phase === PHASE.HOMING;
+window.isEnginePassive = (phase) => phase === PHASE.IDLE || phase === PHASE.ABORTED;
+
+window.isEngineActive = (phase) => {
+  return phase === PHASE.HOMING || phase === PHASE.PAUSED || 
+         phase === PHASE.MEASURING || phase === PHASE.SWITCHING;
 }
 
-/**
- * Check if phase allows jar selection
- */
-function isSelectionPhase(phase) {
-  return phase === PHASE.IDLE || phase === PHASE.ABORTED;
+window.isEngineArmed = (phase) => phase === window.PHASE.ARMED; // new canonical motor-armed phase from backend
+
+window.taskAborted = (phase) => phase === PHASE.ABORTED;
+
+window.taskCompleted = (old_phase, new_phase) => { 
+  return (old_phase === PHASE.SWITCHING && new_phase === PHASE.IDLE) ||
+         (old_phase === PHASE.ARMED && new_phase === PHASE.IDLE);
 }
 
 /**
  * Get human-readable phase name
  */
-function getPhaseText(phase) {
+window.getPhaseText = function (phase) {
   const phaseTexts = {
     [PHASE.IDLE]: "Ready",
+    [PHASE.ARMED]: "Waiting",
     [PHASE.HOMING]: "Homing",
     [PHASE.MEASURING]: "Measuring",
     [PHASE.PAUSED]: "Paused",
@@ -50,8 +53,3 @@ function getPhaseText(phase) {
   };
   return phaseTexts[phase] || "Unknown";
 }
-
-// Expose globally
-window.isActivePhase = isActivePhase;
-window.isSelectionPhase = isSelectionPhase;
-window.getPhaseText = getPhaseText;

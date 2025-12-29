@@ -11,6 +11,43 @@ window.UI_CAPS = {
   mux: false
 };
 
+window.isMotorMode = () => window.UI_CAPS?.motor === true;
+window.isMuxMode = () => window.UI_CAPS?.mux === true;
+
+function show(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("d-none");
+}
+
+function hide(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("d-none");
+}
+
+window.switchToMotorMode = function() {
+  window.UI_CAPS.motor = true;
+  window.UI_CAPS.mux = false;
+  show("motor-jog-card");          // actuator
+  show("motor-timeout-block");     // actuator
+  show("btnRepeat");               // actuator
+  show("btnFinish");               // actuator
+
+  hide("channel-selection-card");  // mux-only
+  hide("repeat-count-block");      // mux-only
+}
+
+window.switchToMuxMode = function() {
+  window.UI_CAPS.motor = false;
+  window.UI_CAPS.mux = true;
+  hide("motor-jog-card");
+  hide("motor-timeout-block");
+  hide("btnRepeat");
+  hide("btnFinish");
+
+  show("channel-selection-card");
+  show("repeat-count-block");
+}
+
 // ---------------------------------------------------------------------
 // Shared event hub for all tabs
 // ---------------------------------------------------------------------
@@ -334,8 +371,8 @@ if (window.GaseraHub) {
         }
 
         // ET/TT timer management - start on SWITCHING (includes homing) to stay in sync
-        const shouldStartTimer = window.isActivePhase(phase) && !etttTimer && d.tt_seconds;
-        const shouldStopTimer = !window.isActivePhase(phase) && (etttTimer || document.getElementById("timingDisplay")?.style.display !== "none");
+        const shouldStartTimer = window.isEngineActive(phase) && !etttTimer && d.tt_seconds;
+        const shouldStopTimer = !window.isEngineActive(phase) && (etttTimer || document.getElementById("timingDisplay")?.style.display !== "none");
 
         if (shouldStartTimer) {
             startETTTTimer(d.tt_seconds);

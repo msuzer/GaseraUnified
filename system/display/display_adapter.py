@@ -95,7 +95,7 @@ class DisplayAdapter:
             self._controller.show(self._summary("MEASUREMENT DONE"))
 
         elif event == TaskEvent.TASK_ABORTED:
-            self._controller.show(self._summary("TASK ABORTED"))
+            self._controller.show(self._summary("MEASUREMENT ABORTED"))
 
         elif event == TaskEvent.ERROR:
             self._controller.show(self._summary("ERROR"))
