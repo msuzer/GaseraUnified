@@ -6,7 +6,7 @@ from typing import Dict, Any
 
 from system.log_utils import debug
 from system.preferences import prefs, KEY_BUZZER_ENABLED
-from gasera.controller import gasera
+from system import services
 from gasera.storage_utils import check_usb_change
 
 """
@@ -97,7 +97,7 @@ def _update_usb_status() -> None:
 
 def _update_gasera_status() -> None:
     try:
-        dev_status = gasera.get_device_status()
+        dev_status = services.gasera_controller.get_device_status()
     except Exception:
         with _lock:
             _latest_device_status["gasera"] = {"online": False, "error": True}
@@ -126,7 +126,7 @@ def _update_gasera_phase() -> None:
 
     if online and code == 5:
         try:
-            meas_status = gasera.get_measurement_status()
+            meas_status = services.gasera_controller.get_measurement_status()
             phase = (
                 meas_status.description
                 if meas_status and not meas_status.error

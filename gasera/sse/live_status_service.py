@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Dict, Any, Tuple
 
 from system.log_utils import warn, error
-from gasera.controller import gasera
+from system import services
 from gasera.acquisition.mux import MuxAcquisitionEngine as AcquisitionEngine
 from gasera.acquisition.base import Progress, Phase
 
@@ -47,7 +47,7 @@ def _background_status_updater() -> None:
     while not _updater_stop_event.is_set():
         try:
             if _engine and _engine.is_running():
-                result = gasera.acon_proxy()
+                result = services.gasera_controller.acon_proxy()
                 if isinstance(result, dict) and result.get("components"):
                     with _lock:
                         progress_snapshot = latest_progress_snapshot.copy() # ← isolate consumer

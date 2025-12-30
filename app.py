@@ -2,61 +2,55 @@ from flask import Flask, render_template
 import sys
 from pathlib import Path
 
-from system.device.device_init import init_device, init_engine
-init_device()
-init_engine()
-
-from system import services
-from system.log_utils import debug
-from gasera.tcp_client import init_tcp_client
-from system.preferences import prefs, KEY_SIMULATOR_ENABLED
-
 BASE_DIR = Path(__file__).resolve().parent
 VENDOR_DIR = BASE_DIR / "vendor"
 
 if VENDOR_DIR.exists():
     sys.path.insert(0, str(VENDOR_DIR))
 
-from system.device.device_init import init_device, init_display_stack
+from system.log_utils import debug
+debug("starting service", version="1.0.0")
+
+from system.device.device_init import init_device, init_gpio_service, init_buzzer_service, init_display_stack
+init_device()
+init_gpio_service()
+init_buzzer_service()
 init_display_stack()
 
-DEFAULT_GASERA_IP = "192.168.0.100"
-
 # Use CLI arg if provided, else check simulator preference, else default
+from system.preferences import prefs, KEY_SIMULATOR_ENABLED
+DEFAULT_GASERA_IP = "192.168.0.100"
 if len(sys.argv) > 1 and sys.argv[1]:
     target_ip = sys.argv[1]
 else:
     use_sim = prefs.get(KEY_SIMULATOR_ENABLED, False)
     target_ip = "127.0.0.1" if use_sim else DEFAULT_GASERA_IP
 
-tcp_client = init_tcp_client(target_ip)
-debug(f"[GaseraMux] TCP target: {target_ip}:8888")
+from system.device.device_init import init_tcp_client, init_gasera_controller, init_engine, init_trigger_monitor, start_display_thread
+init_tcp_client(target_ip)
+init_gasera_controller()
+init_engine()
+init_trigger_monitor()
+start_display_thread()
 
 from system import services
-from system.device.device_init import init_buzzer_service
-debug("starting service", version="1.0.0")
-init_buzzer_service()
 services.buzzer.play("power_on")
-
-app = Flask(__name__)
-
-from system.motor.routes import motor_bp
-from system.routes import system_bp
-from gasera.routes import gasera_bp
-from settings.routes import settings_bp
-
-app.register_blueprint(motor_bp, url_prefix="/motor")
-app.register_blueprint(gasera_bp, url_prefix="/gasera")
-app.register_blueprint(system_bp, url_prefix="/system")
-app.register_blueprint(settings_bp, url_prefix="/settings")
-
-# start LCD/OLED monitor in background
-from system.device.device_init import start_display_thread
-start_display_thread()
 
 services.display_controller.show(
     services.display_adapter.info("App Startup", "Initializing...")
 )
+
+from system.routes import system_bp
+from gasera.routes import gasera_bp
+from settings.routes import settings_bp
+from system.motor.routes import motor_bp
+
+app = Flask(__name__)
+
+app.register_blueprint(gasera_bp, url_prefix="/gasera")
+app.register_blueprint(system_bp, url_prefix="/system")
+app.register_blueprint(settings_bp, url_prefix="/settings")
+app.register_blueprint(motor_bp, url_prefix="/motor")
 
 @app.route('/')
 def index():
@@ -64,9 +58,8 @@ def index():
 
 def cleanup():
     """Clean up resources before exit."""
-    from system.gpio.gpio_control import gpio
     debug("Cleaning up resources...")
-    # gpio.cleanup()
+    # services.gpio_service.cleanup()
     debug("Cleanup complete")
 
 def signal_handler(signum, frame):

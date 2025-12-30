@@ -250,12 +250,3 @@ class GaseraTCPClient:
 
             # both attempts failed
             return None
-
-# Global reference (None until initialized)
-tcp_client: GaseraTCPClient | None = None
-
-def init_tcp_client(host: str, port: int = 8888):
-    """Create and store a global TCP client instance."""
-    global tcp_client
-    tcp_client = GaseraTCPClient(host=host, port=port)
-    return tcp_client

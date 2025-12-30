@@ -4,7 +4,7 @@ from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
 from system.log_utils import error, verbose, warn, debug
-from system.gpio.gpio_control import gpio
+from system import services
 from system.gpio import pin_assignments as PINS
 
 class TriggerMonitor:
@@ -35,7 +35,7 @@ class TriggerMonitor:
             return
         try:
             debug(f"[TRIGGER] Edge monitoring started on {PINS.TRIGGER_PIN}")
-            gpio.watch(PINS.TRIGGER_PIN, self._on_edge, edge="both")
+            services.gpio_service.watch(PINS.TRIGGER_PIN, self._on_edge, edge="both")
             self._started = True
         except OSError as e:
             if e.errno == 16:

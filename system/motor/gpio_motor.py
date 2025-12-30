@@ -1,6 +1,5 @@
 import time
-from system.gpio.gpio_control import gpio
-
+from system import services
 
 class GPIOMotor:
     """
@@ -24,19 +23,19 @@ class GPIOMotor:
         return self._moving
 
     def _stop_pins(self):
-        gpio.reset(self.pin_cw)
-        gpio.reset(self.pin_ccw)
+        services.gpio_service.reset(self.pin_cw)
+        services.gpio_service.reset(self.pin_ccw)
         self._moving = False
         time.sleep(self.settle)
 
     def move_forward(self):
         self._stop_pins()
-        gpio.set(self.pin_cw)
+        services.gpio_service.set(self.pin_cw)
         self._moving = True
 
     def move_backward(self):
         self._stop_pins()
-        gpio.set(self.pin_ccw)
+        services.gpio_service.set(self.pin_ccw)
         self._moving = True
 
     def stop(self):

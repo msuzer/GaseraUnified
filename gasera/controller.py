@@ -1,8 +1,8 @@
 from typing import Optional
 from gasera.protocol import GaseraProtocol, DeviceStatus, ErrorList, TaskList, ACONResult, MeasurementStatus, DeviceName, IterationNumber, NetworkSettings, DateTimeResult
 from gasera.gas_info import get_gas_name, get_color_for_cas, get_cas_details
-from gasera import tcp_client  # import module to observe runtime-initialized global
-from system.log_utils import debug, warn
+from gasera.tcp_client import GaseraTCPClient
+from system.log_utils import warn
 
 # Top-level (above GaseraController)
 class TaskIDs:
@@ -27,26 +27,18 @@ class TaskIDs:
         return set(cls.NAME_TO_ID.keys())
 
 class GaseraController:
-    def __init__(self):
+    def __init__(self, tcp_client: Optional[GaseraTCPClient] = None):
         self.proto = GaseraProtocol()
+        self.tcp_client = tcp_client
     
     def _send(self, command: str):
         """Send command via the runtime-initialized TCP client, if available."""
-        client = getattr(tcp_client, "tcp_client", None)
-        if not client:
+        client = self.tcp_client
+        if client is None:
             warn("TCP client not initialized; command skipped")
             return None
         return client.send_command(command)
     
-    def is_connected(self):
-        was_online = getattr(self, "_was_online", None)
-        client = getattr(tcp_client, "tcp_client", None)
-        is_now = bool(client and client.is_online())
-        if was_online != is_now:
-            debug(f"Gasera is now {'online' if is_now else 'offline'}")
-        self._was_online = is_now
-        return is_now
-
     def acon_proxy(self) -> dict:
         command = self.proto.build_command("ACON")
         response = self._send(command)
@@ -93,9 +85,8 @@ class GaseraController:
         resp = self._send(cmd)
         if resp:
             result = self.proto.parse_asts(resp)
-            client = getattr(tcp_client, "tcp_client", None)
-            if client and client.on_status_change:
-                client.on_status_change(result)
+            if self.tcp_client and self.tcp_client.on_status_change:
+                self.tcp_client.on_status_change(result)
             return result
         return None
     
@@ -265,6 +256,3 @@ class GaseraController:
         cmd = self.proto.reboot_device()
         resp = self._send(cmd)
         return self.proto.parse_generic(resp, "RDEV").as_string() if resp else None
-
-# lazy singleton instance
-gasera = GaseraController()

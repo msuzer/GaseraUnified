@@ -2,7 +2,7 @@
 from system.device.device_profile import DEVICE, Device
 from system.gpio.pin_assignments import select_profile
 from system import services
-from system.log_utils import info
+from system.log_utils import info, debug
 
 def init_device():
     if DEVICE == Device.MUX:
@@ -19,19 +19,10 @@ def init_device():
     from system.gpio import pin_assignments as PINS
     info(f"[DEVICE] BUZZER_PIN resolved to {PINS.BUZZER_PIN}")
 
-    # Initialize outputs after profile selection
-    from system.gpio.gpio_control import initialize_outputs
-    initialize_outputs()
-
-def init_engine():
-    if DEVICE == Device.MUX:
-        from gasera.composition.mux import build_engine
-    elif DEVICE == Device.MOTOR:
-        from gasera.composition.motor import build_engine
-    else:
-        raise RuntimeError("Unsupported device")
-
-    services.engine_service = build_engine()
+def init_gpio_service():
+    from system.gpio.gpio_control import GPIOController
+    services.gpio_service = GPIOController()
+    services.gpio_service.initialize_outputs()
 
 def init_buzzer_service():
     from system.buzzer.buzzer_facade import BuzzerFacade
@@ -58,3 +49,27 @@ def start_display_thread():
 
     t = threading.Thread(target=run, daemon=True, name="display-thread")
     t.start()
+
+def init_tcp_client(target_ip: str):
+    from gasera.tcp_client import GaseraTCPClient
+    services.tcp_client = GaseraTCPClient(target_ip)
+    debug(f"[GaseraMux] TCP target: {target_ip}:8888")
+
+def init_gasera_controller():
+    from gasera.controller import GaseraController
+    services.gasera_controller = GaseraController(services.tcp_client)
+
+def init_trigger_monitor():
+    from gasera.trigger_monitor import TriggerMonitor
+    services.trigger_monitor = TriggerMonitor(services.engine_service)
+    services.trigger_monitor.start()
+
+def init_engine():
+    if DEVICE == Device.MUX:
+        from gasera.composition.mux import build_engine
+    elif DEVICE == Device.MOTOR:
+        from gasera.composition.motor import build_engine
+    else:
+        raise RuntimeError("Unsupported device")
+
+    services.engine_service = build_engine()

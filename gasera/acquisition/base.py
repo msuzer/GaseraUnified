@@ -20,7 +20,7 @@ from gasera.motion.iface import MotionInterface
 from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
 from system.preferences import prefs
-from gasera.controller import gasera, TaskIDs
+from gasera.controller import TaskIDs
 from gasera.measurement_logger import MeasurementLogger
 from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase
@@ -231,7 +231,7 @@ class BaseAcquisitionEngine(ABC):
         try:
             save_on_gasera = bool(prefs.get(KEY_ONLINE_MODE_ENABLED, False))
             desired_online_mode = not save_on_gasera  # invert semantics for SONL
-            resp_online = gasera.set_online_mode(desired_online_mode)
+            resp_online = services.gasera_controller.set_online_mode(desired_online_mode)
             info(
                 f"[ENGINE] Applied SONL online_mode={'enabled' if desired_online_mode else 'disabled'} "
                 f"(save_on_gasera={'yes' if save_on_gasera else 'no'}) resp={resp_online}"
@@ -247,7 +247,7 @@ class BaseAcquisitionEngine(ABC):
             warn("[ENGINE] Gasera not idle")
             return False, "Gasera not idle"
 
-        ok, msg = gasera.start_measurement(TaskIDs.DEFAULT)
+        ok, msg = services.gasera_controller.start_measurement(TaskIDs.DEFAULT)
         if not ok:
             error(f"[ENGINE] Gasera start_measurement failed: {msg}")
             return False, msg
@@ -260,7 +260,7 @@ class BaseAcquisitionEngine(ABC):
             debug("[ENGINE] Gasera already idle")
             return True
 
-        ok, msg = gasera.stop_measurement()
+        ok, msg = services.gasera_controller.stop_measurement()
         if not ok:
             error(f"[ENGINE] Gasera stop_measurement failed: {msg}")
             return False

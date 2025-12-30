@@ -3,7 +3,6 @@ from gasera.sse.motor_status_service import get_motor_snapshots
 from system import services
 from system.preferences import prefs
 from system.log_utils import verbose, debug, info, warn, error
-from gasera.trigger_monitor import TriggerMonitor
 from gasera import gas_info
 from gasera.sse.utils import SseDeltaTracker
 from system.services import engine_service as engine
@@ -30,9 +29,6 @@ gasera_bp = Blueprint("gasera", __name__)
 # ----------------------------------------------------------------------
 # Singleton setup
 # ----------------------------------------------------------------------
-trigger = TriggerMonitor(engine)
-trigger.start()
-
 # Initialize live status service and start updater
 live_attach(engine)
 services.display_adapter.attach_engine(engine)

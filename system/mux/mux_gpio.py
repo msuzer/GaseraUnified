@@ -1,7 +1,7 @@
 # mux/mux_gpio.py
 import time
 from system.mux.iface import MuxInterface
-from system.gpio.gpio_control import gpio
+from system import services
 
 
 class GPIOMux(MuxInterface):
@@ -20,9 +20,9 @@ class GPIOMux(MuxInterface):
         return self._pos
 
     def _pulse(self, pin):
-        gpio.set(pin)
+        services.gpio_service.set(pin)
         time.sleep(self.pulse)
-        gpio.reset(pin)
+        services.gpio_service.reset(pin)
         time.sleep(self.settle)
 
     def home(self):

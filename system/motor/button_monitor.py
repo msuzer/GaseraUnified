@@ -1,6 +1,6 @@
 # motor/button_monitor.py
 import time
-from system.gpio.gpio_control import gpio
+from system import services
 
 class MotorButtonMonitor:
     """
@@ -39,7 +39,7 @@ class MotorButtonMonitor:
     def start(self):
         """Register GPIO edge watchers."""
         for _, (pin, action) in self.pin_map.items():
-            gpio.watch(
+            services.gpio_service.watch(
                 pin,
                 self._make_handler(pin, action),
                 edge="both",

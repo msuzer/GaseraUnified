@@ -16,7 +16,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple, Union
-from system.gpio.gpio_control import gpio
+from system import services
 from system.gpio import pin_assignments as PINS
 from system.log_utils import debug, info
 
@@ -221,7 +221,7 @@ class AsyncBuzzer:
                 pass
         # Failsafe off
         try:
-            gpio.reset(PINS.BUZZER_PIN)
+            services.gpio_service.reset(PINS.BUZZER_PIN)
         except Exception:
             pass
 
@@ -355,7 +355,7 @@ class AsyncBuzzer:
             pass
         # ensure buzzer off
         try:
-            gpio.reset(PINS.BUZZER_PIN)
+            services.gpio_service.reset(PINS.BUZZER_PIN)
         except Exception:
             pass
         await asyncio.sleep(0)
@@ -365,7 +365,7 @@ class AsyncBuzzer:
         self._disabled = True
         info("[BUZZER] disabled (muted)")
         try:
-            gpio.reset(PINS.BUZZER_PIN)          # ensure pin reset
+            services.gpio_service.reset(PINS.BUZZER_PIN)          # ensure pin reset
         except Exception:
             pass
         self._safe_async(self.stop_all())
@@ -423,7 +423,7 @@ class AsyncBuzzer:
                     await asyncio.sleep(self.min_silence_between_jobs)
                 # ensure off
                 try:
-                    gpio.reset(PINS.BUZZER_PIN)
+                    services.gpio_service.reset(PINS.BUZZER_PIN)
                 except Exception:
                     pass
             finally:
@@ -444,14 +444,14 @@ class AsyncBuzzer:
                     return True
                 # ON
                 try:
-                    gpio.set(PINS.BUZZER_PIN)
+                    services.gpio_service.set(PINS.BUZZER_PIN)
                 except Exception:
                     # If GPIO raises, just attempt to continue off
                     pass
                 await asyncio.sleep(max(0.0, on_sec))
                 # OFF
                 try:
-                    gpio.reset(PINS.BUZZER_PIN)
+                    services.gpio_service.reset(PINS.BUZZER_PIN)
                 except Exception:
                     pass
                 await asyncio.sleep(max(0.0, off_sec))
@@ -465,4 +465,3 @@ class AsyncBuzzer:
             loop.create_task(coro)
         except RuntimeError:
             asyncio.run(coro)
-

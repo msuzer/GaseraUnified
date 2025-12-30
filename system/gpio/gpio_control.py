@@ -84,30 +84,22 @@ class GPIOController:
         t.start()
         return t
 
-# Global instance
-gpio = GPIOController()
+    def initialize_outputs(self):
+        """Initialize output pins to LOW based on current profile."""
+        """Call initialize_outputs() after select_profile() in device init."""
+        # Import pins at call time to pick up selected profile
+        from system.gpio.pin_assignments import (
+            BUZZER_PIN, OC1_PIN, OC2_PIN, OC3_PIN, OC4_PIN, OC5_PIN,
+            MOTOR0_CW_PIN, MOTOR0_CCW_PIN, MOTOR1_CW_PIN, MOTOR1_CCW_PIN,
+        )
 
-"""
-Output initialization is deferred to a callable to respect
-hardware profile selection timing. Call initialize_outputs()
-after select_profile() in device init.
-"""
-
-def initialize_outputs():
-    """Initialize output pins to LOW based on current profile."""
-    # Import pins at call time to pick up selected profile
-    from system.gpio.pin_assignments import (
-        BUZZER_PIN, OC1_PIN, OC2_PIN, OC3_PIN, OC4_PIN, OC5_PIN,
-        MOTOR0_CW_PIN, MOTOR0_CCW_PIN, MOTOR1_CW_PIN, MOTOR1_CCW_PIN,
-    )
-
-    output_pins = [
-        BUZZER_PIN, OC1_PIN, OC2_PIN, OC3_PIN, OC4_PIN, OC5_PIN,
-        MOTOR0_CW_PIN, MOTOR0_CCW_PIN, MOTOR1_CW_PIN, MOTOR1_CCW_PIN,
-    ]
-    for pin in output_pins:
-        try:
-            gpio.reset(pin)
-        except Exception:
-            # Ignore reset errors to avoid breaking startup on single pin issues
-            pass
+        output_pins = [
+            BUZZER_PIN, OC1_PIN, OC2_PIN, OC3_PIN, OC4_PIN, OC5_PIN,
+            MOTOR0_CW_PIN, MOTOR0_CCW_PIN, MOTOR1_CW_PIN, MOTOR1_CCW_PIN,
+        ]
+        for pin in output_pins:
+            try:
+                self.reset(pin)
+            except Exception:
+                # Ignore reset errors to avoid breaking startup on single pin issues
+                pass
