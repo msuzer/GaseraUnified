@@ -71,6 +71,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.enabled_count = len(cfg.actuator_ids)
         self.progress.total_steps = self.progress.enabled_count  # per-cycle
         self.progress.repeat_total = 0
+        self.channel_timeout_sec = float(cfg.motor_timeout_sec)
         self.progress.tt_seconds = self.estimate_cycle_time_seconds()
 
         return True, "Configuration valid"
@@ -78,6 +79,12 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
     def _on_start_prepare(self) -> tuple[bool, str]:
         self._repeat_event.clear()
         self._accumulated_seconds = 0.0
+        # set engine-specific channel timeout so base helpers use the correct value
+        if self.cfg is not None:
+            try:
+                self.channel_timeout_sec = float(self.cfg.motor_timeout_sec)
+            except Exception:
+                self.channel_timeout_sec = None
         return True, "ok"
 
     def _on_stop_unblock(self) -> None:
@@ -195,14 +202,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         """
         assert self.cfg is not None
 
-        # Extend
-        self._set_phase(Phase.SWITCHING)
-        self.motion.step(actuator_id)
-
-        if not self._blocking_wait(float(self.cfg.motor_timeout_sec), notify=True):
+        # Extend (step, wait, reset) using shared helper
+        if not self.motion_move_and_wait(actuator_id):
             return False
-        
-        self.motion.reset(actuator_id)
         
         # Pause (settle)
         self._set_phase(Phase.PAUSED)
@@ -219,14 +221,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             warn("[ENGINE] Aborting: Gasera stopped unexpectedly")
             return False
 
-        # Home
-        self._set_phase(Phase.HOMING)
-        self.motion.home(actuator_id)
-
-        if not self._blocking_wait(float(self.cfg.motor_timeout_sec), notify=True):
+        # Home (home, wait, reset) using shared helper
+        if not self.motion_home_and_wait(actuator_id):
             return False
-        
-        self.motion.reset(actuator_id)
 
         return True
 
@@ -242,26 +239,6 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             f"percent={pct}% step_index={self.progress.step_index}"
         )
         self._emit_progress_event()
-
-    def _home_all_actuators(self):
-        assert self.cfg is not None
-        self._set_phase(Phase.HOMING)
-        services.buzzer.play("home")
-
-        for idx, actuator_id in enumerate(self.cfg.actuator_ids):
-            if self._stop_event.is_set():
-                return
-
-            self.progress.current_channel = idx
-            self.progress.next_channel = (idx + 1) if (idx + 1 < len(self.cfg.actuator_ids)) else None
-            self._emit_progress_event()
-
-            try:
-                self.motion.home(actuator_id)
-            except TypeError:
-                self.motion.home()
-
-            self._blocking_wait(float(self.cfg.motor_timeout_sec), notify=True)
 
     def estimate_cycle_time_seconds(self) -> float:
         if not self.cfg:

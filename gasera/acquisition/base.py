@@ -60,6 +60,9 @@ class BaseAcquisitionEngine(ABC):
 
         self._last_notified_vch: int = -1
         self._start_timestamp: Optional[float] = None
+        # per-channel movement timeout (seconds). Subclasses may set this
+        # (e.g., MUX uses SWITCHING_SETTLE_TIME, Motor uses cfg.motor_timeout_sec)
+        self.channel_timeout_sec: float = SWITCHING_SETTLE_TIME
 
     def subscribe(self, cb: Callable[[Progress], None]) -> None:
         self._progress_subs.append(cb)
@@ -316,6 +319,32 @@ class BaseAcquisitionEngine(ABC):
         # elapsed_seconds is always meaningful
         if self._start_timestamp is not None:
             self.progress.elapsed_seconds = max(0.0, time.time() - float(self._start_timestamp))
+
+    # -----------------------------
+    # Motion helpers
+    # -----------------------------
+    def motion_move_and_wait(self, unit_id: Optional[str] = None, was_enabled: bool = True) -> bool:
+        self._set_phase(Phase.SWITCHING)
+
+        if was_enabled:
+            services.buzzer.play("step")
+
+        self.motion.step(unit_id)
+        ok = self._blocking_wait(duration=self.channel_timeout_sec, notify=True)
+        self.motion.reset(unit_id)
+
+        return ok
+
+    def motion_home_and_wait(self, unit_id: Optional[str] = None) -> bool:
+        self._set_phase(Phase.HOMING)
+
+        services.buzzer.play("home")
+
+        self.motion.home(unit_id)
+        ok = self._blocking_wait(duration=self.channel_timeout_sec, notify=True)
+        self.motion.reset(unit_id)
+
+        return ok
 
     def on_live_data(self, live_data) -> bool:
         """Shared live data sink (logger dedupe logic lives in MeasurementLogger)."""

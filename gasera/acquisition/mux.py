@@ -75,6 +75,8 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.repeat_total = self.cfg.repeat_count
         self.progress.total_steps = self.cfg.repeat_count * self.progress.enabled_count
         self.progress.tt_seconds = self.estimate_total_time_seconds()
+        # set engine channel timeout for motion helpers
+        self.channel_timeout_sec = SWITCHING_SETTLE_TIME
         
         self._emit_task_event(TaskEvent.TASK_STARTED)
         
@@ -113,7 +115,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self._refresh_derived_progress()
 
         # Home muxes at start of each repeat
-        self._home_mux()
+        self.motion_home_and_wait()
 
         for vch, enabled in enumerate(self.cfg.include_channels):
             self.progress.current_channel = vch
@@ -143,7 +145,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
                 debug("[ENGINE] all enabled channels processed for this repeat")
                 break
 
-            if not self._switch_to_next_channel(enabled):
+            if not self.motion_move_and_wait(was_enabled=bool(enabled)):
                 return False
 
         self.progress.repeat_index = rep + 1
@@ -173,19 +175,6 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
 
         return True
 
-    def _switch_to_next_channel(self, was_enabled: bool) -> bool:
-        self._set_phase(Phase.SWITCHING)
-
-        if was_enabled:
-            services.buzzer.play("step")
-
-        self.motion.step()
-
-        if not self._blocking_wait(SWITCHING_SETTLE_TIME, notify=True):
-            return False
-
-        return True
-
     def _update_progress(self, rep: int, processed: int, overall_steps: int):
         """
         Update progress after a measurement completes.
@@ -205,12 +194,6 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
             f"[ENGINE] progress: {progress_pct}% overall_progress: {overall_progress_pct}% "
             f"step_index: {self.progress.step_index}"
         )
-
-    def _home_mux(self):
-        self._set_phase(Phase.HOMING)
-        services.buzzer.play("home")
-        self.motion.home()
-        self._blocking_wait(SWITCHING_SETTLE_TIME, notify=True)
 
     def estimate_total_time_seconds(self) -> float:
         """Estimate total run time for configured measurement (used for frontend ETA display)."""
