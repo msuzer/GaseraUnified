@@ -2,7 +2,7 @@ from datetime import datetime
 import socket
 import subprocess
 
-from gasera.sse.device_status_service import get_latest_gasera_status
+from system import services
 
 def get_ip_address():
     try:
@@ -20,7 +20,7 @@ def get_wifi_ssid():
         return "Unknown"
 
 def get_gasera_status():
-    gasera_status = get_latest_gasera_status()
+    gasera_status = services.device_status_service.get_latest_gasera_status()
     if gasera_status:
         online = gasera_status.get("online", False)
         return "Online" if online else "Offline"

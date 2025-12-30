@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, requests, time, subprocess
+import json, requests, time
 
 REPO = "msuzer/GaseraMux"
 BRANCH = "main"

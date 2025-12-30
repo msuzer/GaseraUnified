@@ -8,7 +8,6 @@ import threading
 from system import services
 from system.preferences import KEY_SIMULATOR_ENABLED
 from system.log_utils import debug, info, warn
-from gasera.routes import engine
 
 from flask import Blueprint
 
@@ -60,7 +59,7 @@ def _reject_if_measuring(action: str):
     """
     Block destructive system actions while measurement is running.
     """
-    if engine.is_running():
+    if services.engine_service.is_running():
         warn(f"[SETTINGS] {action} blocked: measurement in progress")
         return jsonify({
             "ok": False,

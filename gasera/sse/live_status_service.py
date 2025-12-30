@@ -103,39 +103,3 @@ class LiveStatusService:
     def get_live_snapshots(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         with self._lock:
             return self.latest_progress_snapshot.copy(), self.latest_live_data.copy()
-
-
-# -----------------------------------------------------------------------------
-# Module-level delegates to instance in system.services
-# -----------------------------------------------------------------------------
-
-def _get_service() -> LiveStatusService | None:
-    return getattr(services, "live_status_service", None)
-
-
-def init(engine) -> None:
-    svc = _get_service()
-    if svc is None:
-        return
-    svc.attach_engine(engine)
-
-
-def start_background_updater() -> None:
-    svc = _get_service()
-    if svc is None:
-        return
-    svc.start_background_updater()
-
-
-def stop_background_updater() -> None:
-    svc = _get_service()
-    if svc is None:
-        return
-    svc.stop_background_updater()
-
-
-def get_live_snapshots() -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    svc = _get_service()
-    if svc is None:
-        return {}, {}
-    return svc.get_live_snapshots()

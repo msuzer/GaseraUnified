@@ -14,9 +14,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import List, Optional, Callable
 
-from gasera.sse.device_status_service import get_latest_gasera_status
 from gasera.motion.iface import MotionInterface
-
 from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
 from system import services
@@ -268,7 +266,7 @@ class BaseAcquisitionEngine(ABC):
         return True
 
     def check_gasera_stopped(self) -> bool:
-        gasera_status = get_latest_gasera_status()
+        gasera_status = services.device_status_service.get_latest_gasera_status()
         if gasera_status:
             code = gasera_status.get("status_code")
             online = gasera_status.get("online", False)
@@ -277,7 +275,7 @@ class BaseAcquisitionEngine(ABC):
         return False
 
     def check_gasera_idle(self) -> bool:
-        gasera_status = get_latest_gasera_status()
+        gasera_status = services.device_status_service.get_latest_gasera_status()
         if gasera_status:
             code = gasera_status.get("status_code")
             online = gasera_status.get("online", False)

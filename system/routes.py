@@ -1,4 +1,6 @@
 from flask import Blueprint, jsonify, request, Response
+from flask import request, jsonify, abort
+
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
 from system.log_utils import debug, info, warn, error
@@ -94,15 +96,10 @@ def version_github():
     data = get_github_commits(force=force, stable_only=stable_only)
     return jsonify(data)
 
-from flask import request, jsonify, abort
-from system.version_manager import (
-    require_admin, checkout_commit, rollback_previous
-)
-
 # Dummy commit for testing
 @system_bp.post("/version/checkout")
 def version_checkout():
-    if not require_admin(request):
+    if not services.version_manager.require_admin(request):
         abort(403)
     try:
         try:
@@ -111,7 +108,7 @@ def version_checkout():
             payload = {}
         sha = (payload.get("sha") or "").strip()
 
-        result = checkout_commit(sha)
+        result = services.version_manager.checkout_commit(sha)
         response = jsonify({"status": "ok", **result})
         return response
 
@@ -121,11 +118,11 @@ def version_checkout():
 
 @system_bp.post("/version/rollback")
 def version_rollback():
-    if not require_admin(request):
+    if not services.version_manager.require_admin(request):
         abort(403)
     try:
         # Perform the rollback logic first (your existing helper)
-        result = rollback_previous()
+        result = services.version_manager.rollback_previous()
 
         # Prepare and send response before restarting service
         response = jsonify({"status": "ok", **result})

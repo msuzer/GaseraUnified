@@ -1,22 +1,8 @@
 from flask import Blueprint, jsonify, Response, stream_with_context, request
-from gasera.sse.motor_status_service import get_motor_snapshots
 from system import services
 from system.log_utils import verbose, debug, info, warn, error
 from gasera import gas_info
 from gasera.sse.utils import SseDeltaTracker
-from system.services import engine_service as engine
-
-from gasera.sse.live_status_service import (
-    init as live_attach,
-    start_background_updater,
-    get_live_snapshots,
-)
-
-from gasera.sse.device_status_service import (
-    get_device_snapshots,
-    clear_buzzer_change,
-    start_device_status_poller
-)
 
 import time, json
 from .storage_utils import usb_mounted, get_log_directory, get_free_space, get_total_space, list_log_files, safe_join_in_logdir
@@ -24,16 +10,6 @@ import os
 from flask import send_file
 
 gasera_bp = Blueprint("gasera", __name__)
-
-# ----------------------------------------------------------------------
-# Singleton setup
-# ----------------------------------------------------------------------
-# Initialize live status service and start updater
-live_attach(engine)
-services.display_adapter.attach_engine(engine)
-
-start_background_updater()
-start_device_status_poller()
 
 # ----------------------------------------------------------------------
 # Progress subscription
@@ -59,7 +35,7 @@ def start_measurement() -> tuple[Response, int]:
     data = request.get_json(silent=True) or {}
     try:
         services.preferences_service.update_from_dict(data, write_disk=True)
-        started, msg = engine.start()
+        started, msg = services.engine_service.start()
 
         return jsonify({"ok": started, "message": msg}), 200
 
@@ -69,7 +45,7 @@ def start_measurement() -> tuple[Response, int]:
 
 @gasera_bp.route("/api/measurement/repeat", methods=["POST"])
 def measurement_repeat():
-    ok, msg = engine.trigger_repeat()
+    ok, msg = services.engine_service.trigger_repeat()
     if not ok:
         return jsonify(ok=False, error=msg), 500
 
@@ -78,7 +54,7 @@ def measurement_repeat():
 @gasera_bp.route("/api/measurement/abort", methods=["POST"])
 def abort_measurement() -> tuple[Response, int]:
     warn("[MEAS] Abort requested")
-    ok, msg = engine.abort()
+    ok, msg = services.engine_service.abort()
     if not ok:
         debug(f"[MEAS] abort ignored {msg}")
         return jsonify({"ok": False, "message": msg}), 200
@@ -89,7 +65,7 @@ def abort_measurement() -> tuple[Response, int]:
 def finish_measurement() -> tuple[Response, int]:
     info("[MEAS] Finish requested")
     
-    ok, msg = engine.finish()
+    ok, msg = services.engine_service.finish()
     
     if not ok:
         debug(f"[MEAS] finish ignored {msg}")
@@ -110,9 +86,9 @@ def sse_events() -> Response:
 
         while True:
             try:
-                _progress, _live_data = get_live_snapshots()
-                _device_status = get_device_snapshots()
-                _motor_status = get_motor_snapshots()
+                _progress, _live_data = services.live_status_service.get_live_snapshots()
+                _device_status = services.device_status_service.get_device_snapshots()
+                _motor_status = services.motor_status_service.get_motor_snapshots()
 
                 state = tracker.build(_progress, _live_data, _device_status, _motor_status)
                 payload = json.dumps(state, sort_keys=True)
@@ -124,7 +100,7 @@ def sse_events() -> Response:
 
                     # Clear buzzer change flag after successful send
                     if state.get("device_status", {}).get("buzzer", {}).get("_changed"):
-                        clear_buzzer_change()
+                        services.device_status_service.clear_buzzer_change()
                                         
                     verbose(f"[SSE] sent update: {state}")
                 elif time.monotonic() - last_beat > 10:
