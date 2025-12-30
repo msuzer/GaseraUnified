@@ -10,6 +10,7 @@ class MotorMotion:
     def home(self, unit_id):
         mc = services.motor_controller
         
+        # prefer motor controller service if available
         if mc is not None:
             mc.start(unit_id, "ccw")
         else:
@@ -18,6 +19,7 @@ class MotorMotion:
     def step(self, unit_id):
         mc = services.motor_controller
         
+        # prefer motor controller service if available
         if mc is not None:
             mc.start(unit_id, "cw")
         else:
@@ -26,6 +28,7 @@ class MotorMotion:
     def reset(self, unit_id):
         mc = services.motor_controller
         
+        # prefer motor controller service if available
         if mc is not None:
             mc.stop(unit_id)
         else:
