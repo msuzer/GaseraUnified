@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
-from system.log_utils import debug, error, info, warn
+from system.log_utils import debug, info, warn
 from system import services
 
 from gasera.acquisition.base import SWITCHING_SETTLE_TIME, BaseAcquisitionEngine

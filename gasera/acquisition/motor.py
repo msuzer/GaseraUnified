@@ -10,7 +10,7 @@ from typing import Optional
 
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
-from system.log_utils import debug, error, info, warn
+from system.log_utils import debug, info, warn
 from system import services
 from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, BaseAcquisitionEngine
 from gasera.acquisition.phase import Phase
@@ -79,12 +79,6 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
     def _on_start_prepare(self) -> tuple[bool, str]:
         self._repeat_event.clear()
         self._accumulated_seconds = 0.0
-        # set engine-specific channel timeout so base helpers use the correct value
-        if self.cfg is not None:
-            try:
-                self.channel_timeout_sec = float(self.cfg.motor_timeout_sec)
-            except Exception:
-                self.channel_timeout_sec = None
         return True, "ok"
 
     def _on_stop_unblock(self) -> None:
