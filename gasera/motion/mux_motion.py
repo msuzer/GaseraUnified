@@ -7,10 +7,13 @@ class MuxMotion:
         self.cmux_gpio = cmux_gpio
         self.cmux_serial = cmux_serial
 
-    def home(self):
+    def home(self, unit_id=None):
         self.cmux_gpio.home()
         self.cmux_serial.home()
 
     def step(self, unit_id=None):
         self.cmux_gpio.select_next()
         self.cmux_serial.select_next()
+    
+    def reset(self, unit_id=None):
+        pass  # No action needed to stop mux motion

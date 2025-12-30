@@ -161,6 +161,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 self._emit_progress_event()
 
                 if not self._run_actuator_sequence(actuator_id):
+                    self.motion.reset(actuator_id)
                     return False
 
                 # single source of truth for cycle progress
@@ -196,17 +197,13 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         # Extend
         self._set_phase(Phase.SWITCHING)
-        try:
-            self.motion.step(actuator_id)
-        except TypeError:
-            self.motion.step()
-        except Exception as e:
-            warn(f"[ENGINE] motion.step({actuator_id}) failed: {e}")
-            return False
+        self.motion.step(actuator_id)
 
         if not self._blocking_wait(float(self.cfg.motor_timeout_sec), notify=True):
             return False
-
+        
+        self.motion.reset(actuator_id)
+        
         # Pause (settle)
         self._set_phase(Phase.PAUSED)
         if not self._blocking_wait(float(self.cfg.pause_seconds), notify=True):
@@ -224,16 +221,12 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         # Home
         self._set_phase(Phase.HOMING)
-        try:
-            self.motion.home(actuator_id)
-        except TypeError:
-            self.motion.home()
-        except Exception as e:
-            warn(f"[ENGINE] motion.home({actuator_id}) failed: {e}")
-            return False
+        self.motion.home(actuator_id)
 
         if not self._blocking_wait(float(self.cfg.motor_timeout_sec), notify=True):
             return False
+        
+        self.motion.reset(actuator_id)
 
         return True
 

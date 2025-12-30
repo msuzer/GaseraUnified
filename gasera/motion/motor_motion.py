@@ -11,4 +11,6 @@ class MotorMotion:
 
     def step(self, unit_id):
         self.motors.get(unit_id).move_forward()
-        
+    
+    def reset(self, unit_id):
+        self.motors.get(unit_id).stop()
