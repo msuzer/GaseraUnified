@@ -6,7 +6,7 @@ import os
 import time
 import threading
 from system import services
-from system.preferences import prefs, KEY_SIMULATOR_ENABLED
+from system.preferences import KEY_SIMULATOR_ENABLED
 from system.log_utils import debug, info, warn
 from gasera.routes import engine
 
@@ -108,7 +108,7 @@ def _is_wifi_type(t: str) -> bool:
 @settings_bp.get("/status")
 def settings_status():
     return jsonify({
-        "simulator_enabled": prefs.get(KEY_SIMULATOR_ENABLED, False)
+        "simulator_enabled": services.preferences_service.get(KEY_SIMULATOR_ENABLED, False)
     })
 
 @settings_bp.get("/wifi/saved")
@@ -303,7 +303,7 @@ def restart_service():
     data = request.get_json(silent=True) or {}
     use_simulator = bool(data.get("useSimulator", False))
     # Persist preference
-    prefs.update_from_dict({KEY_SIMULATOR_ENABLED: use_simulator}, write_disk=True)
+    services.preferences_service.update_from_dict({KEY_SIMULATOR_ENABLED: use_simulator}, write_disk=True)
 
     # Restart service with optional simulator arg
     info(f"Restarting gasera.service with simulator={use_simulator}")

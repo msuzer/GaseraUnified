@@ -25,16 +25,6 @@ def _fetch_tags(headers):
     except Exception as e:
         return []
 
-def _is_ancestor(older: str, newer: str) -> bool:
-    try:
-        subprocess.run(
-            ["git", "-C", str(CACHE_DIR.parent),
-             "merge-base", "--is-ancestor", older, newer],
-            check=True, capture_output=True)
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
 def get_github_commits(force=False, stable_only=False):
     """
     Fetch recent commits from GitHub, optionally listing only commits

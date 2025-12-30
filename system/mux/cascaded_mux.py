@@ -1,6 +1,9 @@
 # mux/cascaded_mux.py
+from system.mux.iface import MuxInterface
+
+
 class CascadedMux:
-    def __init__(self, mux1, mux2):
+    def __init__(self, mux1: MuxInterface, mux2: MuxInterface):
         self.m1 = mux1
         self.m2 = mux2
         self._vpos = 0

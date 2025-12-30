@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request, Response
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
-from system.preferences import prefs
 from system.log_utils import debug, info, warn, error
 from system import services
 from system.services import engine_service as engine
@@ -24,7 +23,7 @@ DEFAULTS = {
     KEY_REPEAT_COUNT            : 1,
     KEY_BUZZER_ENABLED          : True,
     KEY_ONLINE_MODE_ENABLED     : True,
-    KEY_INCLUDE_CHANNELS        : [True] * prefs.DEFAULT_INCLUDE_COUNT,
+    KEY_INCLUDE_CHANNELS        : [True] * services.preferences_service.DEFAULT_INCLUDE_COUNT,
     KEY_TRACK_VISIBILITY        : {
         "Acetaldehyde (CH\u2083CHO)": True,
         "Ammonia (NH\u2083)": True,
@@ -145,7 +144,7 @@ def get_preferences() -> tuple[Response, int]:
     Returns the merged dictionary of defaults and stored prefs.
     Always includes all known keys.
     """
-    merged = {**DEFAULTS, **prefs.as_dict()}
+    merged = {**DEFAULTS, **services.preferences_service.as_dict()}
     return jsonify(merged), 200
 
 
@@ -162,7 +161,7 @@ def update_preferences() -> tuple[Response, int]:
     if not data or not isinstance(data, dict):
         return jsonify({"ok": False, "error": "Invalid JSON body"}), 400
 
-    updated = prefs.update_from_dict(data, write_disk=True)
+    updated = services.preferences_service.update_from_dict(data, write_disk=True)
     if not updated:
         return jsonify({"ok": False, "error": "No valid keys to update"}), 400
 
@@ -189,7 +188,7 @@ def get_buzzer_state() -> tuple[Response, int]:
     try:
         enabled = getattr(services.buzzer, "enabled", None)
         if enabled is None:
-            enabled = prefs.get(KEY_BUZZER_ENABLED, True)
+            enabled = services.preferences_service.get(KEY_BUZZER_ENABLED, True)
         return jsonify({"ok": True, "enabled": bool(enabled)}), 200
     except Exception as e:
         error(f"[BUZZER] get_buzzer_state error: {e}")
@@ -217,7 +216,7 @@ def set_buzzer_state() -> tuple[Response, int]:
             services.buzzer.enabled = enabled
 
         # Persist to preferences
-        prefs.update_from_dict({KEY_BUZZER_ENABLED: enabled}, write_disk=True)
+        services.preferences_service.update_from_dict({KEY_BUZZER_ENABLED: enabled}, write_disk=True)
         debug(f"[BUZZER] {'enabled' if enabled else 'disabled'} via POST")
         return jsonify({"ok": True, "enabled": enabled}), 200
 

@@ -3,8 +3,9 @@ import threading
 import asyncio
 from typing import Optional
 from system.buzzer.async_buzzer import AsyncBuzzer
-from system.preferences import prefs, KEY_BUZZER_ENABLED
+from system.preferences import KEY_BUZZER_ENABLED
 from system.log_utils import debug, warn
+from system import services
 
 # Create the async engine here
 engine = AsyncBuzzer(
@@ -57,7 +58,7 @@ class BuzzerFacade:
     def __init__(self):
         # Load persisted buzzer state
         try:
-            self.enabled = prefs.get(KEY_BUZZER_ENABLED, True)
+            self.enabled = services.preferences_service.get(KEY_BUZZER_ENABLED, True)
             debug(f"[BUZZER] restored state: {'ENABLED' if self.enabled else 'DISABLED'}")
         except Exception as e:
             self.enabled = True

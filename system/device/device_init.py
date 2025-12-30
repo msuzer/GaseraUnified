@@ -31,6 +31,10 @@ def init_buzzer_service():
     services.buzzer = BuzzerFacade()
     atexit.register(services.buzzer.shutdown)
 
+def init_preferences_service():
+    from system.preferences import Preferences
+    services.preferences_service = Preferences()
+
 def init_display_stack():
     from system.display.display_driver import DisplayDriver
     from system.display.display_controller import DisplayController
@@ -39,6 +43,20 @@ def init_display_stack():
     driver = DisplayDriver()
     services.display_controller = DisplayController(driver)
     services.display_adapter = DisplayAdapter(services.display_controller)
+
+def init_device_status_service():
+    from gasera.sse.device_status_service import DeviceStatusService
+    services.device_status_service = DeviceStatusService()
+    # register preference callbacks (requires preferences_service to be initialized)
+    try:
+        services.device_status_service.register_callbacks()
+    except Exception:
+        pass
+    # start background poller
+    try:
+        services.device_status_service.start_poller()
+    except Exception:
+        pass
 
 def start_display_thread():
     import time, threading
@@ -73,3 +91,18 @@ def init_engine():
         raise RuntimeError("Unsupported device")
 
     services.engine_service = build_engine()
+
+
+def init_live_status_service():
+    from gasera.sse.live_status_service import LiveStatusService
+    services.live_status_service = LiveStatusService()
+    try:
+        if services.engine_service is not None:
+            services.live_status_service.attach_engine(services.engine_service)
+    except Exception:
+        pass
+
+
+def init_motor_status_service():
+    from gasera.sse.motor_status_service import MotorStatusService
+    services.motor_status_service = MotorStatusService()

@@ -7,8 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
-from system.log_utils import debug, info, warn
-from system.preferences import prefs
+from system.log_utils import debug, error, info, warn
 from system import services
 
 from gasera.acquisition.base import SWITCHING_SETTLE_TIME, BaseAcquisitionEngine
@@ -46,6 +45,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         return "Measurement Task started"
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
+        prefs = services.preferences_service
         cfg = MuxTaskConfig(
             measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 100)),
             pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 5)),

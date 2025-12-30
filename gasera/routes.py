@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, Response, stream_with_context, request
 from gasera.sse.motor_status_service import get_motor_snapshots
 from system import services
-from system.preferences import prefs
 from system.log_utils import verbose, debug, info, warn, error
 from gasera import gas_info
 from gasera.sse.utils import SseDeltaTracker
@@ -59,7 +58,7 @@ def gasera_api_gas_colors() -> tuple[Response, int]:
 def start_measurement() -> tuple[Response, int]:
     data = request.get_json(silent=True) or {}
     try:
-        prefs.update_from_dict(data, write_disk=True)
+        services.preferences_service.update_from_dict(data, write_disk=True)
         started, msg = engine.start()
 
         return jsonify({"ok": started, "message": msg}), 200

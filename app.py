@@ -11,31 +11,38 @@ if VENDOR_DIR.exists():
 from system.log_utils import debug
 debug("starting service", version="1.0.0")
 
-from system.device.device_init import init_device, init_gpio_service, init_buzzer_service, init_display_stack
+from system.device.device_init import init_device, init_gpio_service, init_buzzer_service, init_display_stack, init_preferences_service, init_device_status_service
 init_device()
 init_gpio_service()
 init_buzzer_service()
+init_preferences_service()
 init_display_stack()
+# initialize device status service after preferences are available
+init_device_status_service()
 
 # Use CLI arg if provided, else check simulator preference, else default
-from system.preferences import prefs, KEY_SIMULATOR_ENABLED
+from system import services
+from system.preferences import KEY_SIMULATOR_ENABLED
 DEFAULT_GASERA_IP = "192.168.0.100"
 if len(sys.argv) > 1 and sys.argv[1]:
     target_ip = sys.argv[1]
 else:
-    use_sim = prefs.get(KEY_SIMULATOR_ENABLED, False)
+    use_sim = services.preferences_service.get(KEY_SIMULATOR_ENABLED, False)
     target_ip = "127.0.0.1" if use_sim else DEFAULT_GASERA_IP
 
-from system.device.device_init import init_tcp_client, init_gasera_controller, init_engine, init_trigger_monitor, start_display_thread
+from system.device.device_init import init_tcp_client, init_gasera_controller, init_engine, init_trigger_monitor, start_display_thread, init_live_status_service, init_motor_status_service
 init_tcp_client(target_ip)
 init_gasera_controller()
 init_engine()
+# instantiate live status service now that engine is available
+init_live_status_service()
+    
+# instantiate motor status service so `gasera.routes` sees it
+init_motor_status_service()
 init_trigger_monitor()
 start_display_thread()
 
-from system import services
 services.buzzer.play("power_on")
-
 services.display_controller.show(
     services.display_adapter.info("App Startup", "Initializing...")
 )

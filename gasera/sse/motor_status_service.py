@@ -2,25 +2,41 @@
 from __future__ import annotations
 from typing import Dict, Any
 
-try:
-    from system.services import motor_controller as motor
-except Exception:
-    motor = None
+from system import services
+
+
+class MotorStatusService:
+    """Provides motor status snapshots for SSE consumers."""
+
+    def get_motor_snapshots(self) -> Dict[str, Any] | None:
+        motor = getattr(services, "motor_controller", None)
+        if motor is None:
+            return None
+
+        try:
+            return {
+                "0": motor.state("0"),
+                "1": motor.state("1"),
+            }
+        except Exception:
+            return {"error": True}
+
+
+# Module-level delegate
+def _get_service() -> MotorStatusService | None:
+    return getattr(services, "motor_status_service", None)
+
 
 def get_motor_snapshots() -> Dict[str, Any] | None:
-    """
-    Return motor status snapshot for SSE.
-    - None means: don't include field
-    - Dict means: include field
-    """
-    if motor is None:
-        return None
+    svc = _get_service()
+    if svc is None:
+        # fall back to direct lookup to remain tolerant during init
+        motor = getattr(services, "motor_controller", None)
+        if motor is None:
+            return None
+        try:
+            return {"0": motor.state("0"), "1": motor.state("1")}
+        except Exception:
+            return {"error": True}
 
-    try:
-        return {
-            "0": motor.state("0"),
-            "1": motor.state("1"),
-        }
-    except Exception:
-        # Fail-soft: don't break SSE
-        return {"error": True}
+    return svc.get_motor_snapshots()

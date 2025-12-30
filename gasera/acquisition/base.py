@@ -19,13 +19,12 @@ from gasera.motion.iface import MotionInterface
 
 from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
-from system.preferences import prefs
+from system import services
 from gasera.controller import TaskIDs
 from gasera.measurement_logger import MeasurementLogger
 from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase
 from gasera.acquisition.progress import Progress
-from system import services
 
 from system.preferences import (
     KEY_ONLINE_MODE_ENABLED,
@@ -229,7 +228,7 @@ class BaseAcquisitionEngine(ABC):
     def _apply_online_mode_preference(self) -> tuple[bool, str]:
         """Apply SONL/online mode to Gasera (preference is inverted)."""
         try:
-            save_on_gasera = bool(prefs.get(KEY_ONLINE_MODE_ENABLED, False))
+            save_on_gasera = bool(services.preferences_service.get(KEY_ONLINE_MODE_ENABLED, False))
             desired_online_mode = not save_on_gasera  # invert semantics for SONL
             resp_online = services.gasera_controller.set_online_mode(desired_online_mode)
             info(

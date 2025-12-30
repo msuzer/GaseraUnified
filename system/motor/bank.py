@@ -1,6 +1,8 @@
 # motor/bank.py  (new, tiny helper)
+from system.motor.gpio_motor import GPIOMotor
+
 class MotorBank:
-    def __init__(self, motors: dict[str, object]):
+    def __init__(self, motors: dict[str, GPIOMotor]):
         self._motors = motors
 
     def get(self, motor_id: str):

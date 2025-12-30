@@ -10,10 +10,8 @@ from typing import Optional
 
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
-from system.log_utils import debug, info, warn
-from system.preferences import prefs
+from system.log_utils import debug, error, info, warn
 from system import services
-
 from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, BaseAcquisitionEngine
 from gasera.acquisition.phase import Phase
 
@@ -53,6 +51,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         return "Engine started (waiting for repeat trigger)"
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
+        prefs = services.preferences_service
         cfg = MotorTaskConfig(
             measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 100)),
             pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 5)),

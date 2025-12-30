@@ -1,6 +1,7 @@
 import time
 from threading import Thread, RLock
-from system.preferences import prefs, KEY_MOTOR_TIMEOUT
+from system import services
+from system.preferences import KEY_MOTOR_TIMEOUT
 from system.motor.bank import MotorBank
 
 DEFAULT_MOTOR_TIMEOUT = 10          # seconds
@@ -8,7 +9,7 @@ DEFAULT_MOTOR_TIMEOUT = 10          # seconds
 class MotorController:
     def __init__(self, motors: MotorBank):
         self.motors = motors
-        self.timeout_sec = prefs.get_int(KEY_MOTOR_TIMEOUT, DEFAULT_MOTOR_TIMEOUT)
+        self.timeout_sec = services.preferences_service.get_int(KEY_MOTOR_TIMEOUT, DEFAULT_MOTOR_TIMEOUT)
         self._state = {
             "0": {"status": "idle", "direction": None},
             "1": {"status": "idle", "direction": None}

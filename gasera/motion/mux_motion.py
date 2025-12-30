@@ -1,6 +1,9 @@
 # motion/mux_motion.py
+from system.mux.mux_gpio import GPIOMux
+from system.mux.mux_vici_uma import ViciUMAMux
+
 class MuxMotion:
-    def __init__(self, cmux_gpio, cmux_serial):
+    def __init__(self, cmux_gpio: GPIOMux, cmux_serial: ViciUMAMux):
         self.cmux_gpio = cmux_gpio
         self.cmux_serial = cmux_serial
 

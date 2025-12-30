@@ -8,12 +8,10 @@ class GPIOMux(MuxInterface):
     def __init__(self, home_pin, next_pin,
                  *, max_channels=16,
                  pulse_ms=50, settle_ms=30):
+        super().__init__(max_channels=max_channels, settle_ms=settle_ms)
         self.home_pin = home_pin
         self.next_pin = next_pin
-        self.max = max_channels
-        self._pos = 0
         self.pulse = pulse_ms / 1000
-        self.settle = settle_ms / 1000
 
     @property
     def position(self):

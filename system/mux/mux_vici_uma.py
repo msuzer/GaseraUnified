@@ -16,10 +16,7 @@ class ViciUMAMux(MuxInterface):
                  *, baudrate=9600,
                  max_channels=16,
                  settle_ms=200):
-        self.max = max_channels
-        self._pos = 0
-        self.settle = settle_ms / 1000 # ms to s
-        self.error = False
+        super().__init__(max_channels=max_channels, settle_ms=settle_ms)
 
         try :
             self.ser = serial.Serial(
@@ -40,8 +37,6 @@ class ViciUMAMux(MuxInterface):
         except Exception as e:
             error(f"❌ VICI UMA failed on {port}: {e}")
             self.error = True
-
-        self._pos = 0
 
     @property
     def position(self):

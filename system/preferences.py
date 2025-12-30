@@ -157,6 +157,3 @@ class Preferences:
 
     def as_dict(self) -> Dict[str, Any]:
         return dict(self.data)
-
-# Singleton
-prefs = Preferences()
