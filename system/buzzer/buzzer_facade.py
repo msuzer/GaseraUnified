@@ -16,7 +16,7 @@ engine = AsyncBuzzer(
 _loop = None
 _thread = None
 _ready = threading.Event()
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 def _loop_thread():
     global _loop

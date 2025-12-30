@@ -23,7 +23,7 @@ class TriggerMonitor:
         self._press_start_time = None
         self._long_triggered = False
         self._stable_state = 1  # Active-low: released = 1
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._started = False
 
     # ------------------------------------------------------------------

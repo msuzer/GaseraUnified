@@ -60,7 +60,7 @@ class GaseraSimulator:
     with continuous measurement cycles until STPM is received.
     """
     def __init__(self):
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.device_status = BOOTUP_STATUS  # 2 (idle)
         self.meas_status = 0                # 0 (Idle)
         self.last_results: List[Tuple[int, str, float]] = []  # [(ts, cas, conc)]

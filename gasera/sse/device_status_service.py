@@ -28,7 +28,7 @@ class DeviceStatusService:
         self._latest_usb_mounted: bool = False
         self._buzzer_change_pending: bool | None = None
 
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
         self._device_poll_interval = poll_interval
         self._poller_thread: threading.Thread | None = None

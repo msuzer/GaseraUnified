@@ -17,7 +17,7 @@ class LiveStatusService:
         self.latest_progress_snapshot: Dict[str, Any] = {"phase": Phase.IDLE, "current_channel": 0, "repeat_index": 0}
         self.latest_live_data: Dict[str, Any] = {}
 
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._update_interval = update_interval
         self._updater_stop_event = threading.Event()
         self._updater_thread: threading.Thread | None = None

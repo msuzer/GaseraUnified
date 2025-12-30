@@ -1,4 +1,5 @@
 import smbus2
+import threading
 from system.log_utils import debug, info, warn
 from PIL import Image, ImageDraw, ImageFont
 
@@ -22,6 +23,7 @@ class DisplayDriver:
         self.lcd = None
         self.last_oled_frame = None
         self.last_lcd_lines = ["" for _ in range(LCD_ROWS)]
+        self._lock = threading.RLock()
         self._detect_and_init()
 
     # ------------------------------------------------------------------
@@ -80,43 +82,50 @@ class DisplayDriver:
     # ------------------------------------------------------------------
     def clear(self):
         """Clear both displays and reset frame cache."""
-        if self.oled:
-            img = Image.new("1", (self.oled.width, self.oled.height))
-            self.oled.display(img)
-            self.last_oled_frame = None
-        if self.lcd:
-            self.lcd.clear()
-            self.last_lcd_lines = ["" for _ in range(LCD_ROWS)]
+        with self._lock:
+            if self.oled:
+                img = Image.new("1", (self.oled.width, self.oled.height))
+                try:
+                    self.oled.display(img)
+                except Exception as e:
+                    warn(f"[OLED] clear failed: {e}")
+                self.last_oled_frame = None
+            if self.lcd:
+                try:
+                    self.lcd.clear()
+                except Exception as e:
+                    warn(f"[LCD] clear failed: {e}")
+                self.last_lcd_lines = ["" for _ in range(LCD_ROWS)]
 
     # ------------------------------------------------------------------
     def draw_text_lines(self, lines):
         """Update both displays; LCD per-line diff, OLED full-frame diff."""
         if not lines:
             return
-
-        # --- LCD incremental update -----------------------------------
-        if self.lcd:
-            try:
-                for i in range(min(LCD_ROWS, len(lines))):
-                    new = lines[i][:LCD_COLS]
-                    if new != self.last_lcd_lines[i]:
-                        self.lcd.cursor_pos = (i, 0)
-                        self.lcd.write_string(new.ljust(LCD_COLS))
-                        self.last_lcd_lines[i] = new
-            except OSError as e:
-                warn(f"[LCD] update failed: {e}")
-
-        # --- OLED full-frame refresh ----------------------------------
-        if self.oled:
-            joined = "\n".join(lines[:LCD_ROWS])
-            if joined != self.last_oled_frame:
+        with self._lock:
+            # --- LCD incremental update -----------------------------------
+            if self.lcd:
                 try:
-                    font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
-                    img = Image.new("1", (self.oled.width, self.oled.height))
-                    draw = ImageDraw.Draw(img)
-                    for i, line in enumerate(lines[:LCD_ROWS]):
-                        draw.text((0, i * OLED_LINE_SPACING), line, font=font, fill=255)
-                    self.oled.display(img)
-                    self.last_oled_frame = joined
+                    for i in range(min(LCD_ROWS, len(lines))):
+                        new = lines[i][:LCD_COLS]
+                        if new != self.last_lcd_lines[i]:
+                            self.lcd.cursor_pos = (i, 0)
+                            self.lcd.write_string(new.ljust(LCD_COLS))
+                            self.last_lcd_lines[i] = new
                 except OSError as e:
-                    warn(f"[OLED] update failed: {e}")
+                    warn(f"[LCD] update failed: {e}")
+
+            # --- OLED full-frame refresh ----------------------------------
+            if self.oled:
+                joined = "\n".join(lines[:LCD_ROWS])
+                if joined != self.last_oled_frame:
+                    try:
+                        font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+                        img = Image.new("1", (self.oled.width, self.oled.height))
+                        draw = ImageDraw.Draw(img)
+                        for i, line in enumerate(lines[:LCD_ROWS]):
+                            draw.text((0, i * OLED_LINE_SPACING), line, font=font, fill=255)
+                        self.oled.display(img)
+                        self.last_oled_frame = joined
+                    except OSError as e:
+                        warn(f"[OLED] update failed: {e}")
