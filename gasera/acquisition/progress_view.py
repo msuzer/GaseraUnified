@@ -13,19 +13,27 @@ class ProgressView:
     # Channels / Steps
     # -----------------------------
     @property
-    def step_done_label(self) -> Optional[str]:
+    def get_step_string(self) -> Optional[str]:
         if self.p is None or self.p.step_index is None:
             return None
 
         has_total_steps = self.p.total_steps is not None and self.p.total_steps > 0
-
-        current_step = self.p.step_index + 1        
+        # `step_index` represents the number of completed measurements.
+        completed = max(0, int(self.p.step_index))
         if has_total_steps:
-            current_step = min(current_step, self.p.total_steps) # cap it to total_steps if known
-            step_str = f"{current_step}/{self.p.total_steps}"
+            completed = min(completed, self.p.total_steps)
+            step_str = f"{completed}/{self.p.total_steps}"
         else:
-            step_str = f"{current_step}"
-        
+            step_str = f"{completed}"
+
+        return step_str
+    
+    @property
+    def step_done_label(self) -> Optional[str]:
+        step_str = self.get_step_string
+        if step_str is None:
+            return None
+
         return f"Done: {step_str} steps"
 
     @property
@@ -33,16 +41,11 @@ class ProgressView:
         if self.p is None or self.p.current_channel is None or self.p.step_index is None:
             return None
 
-        has_total_steps = self.p.total_steps is not None and self.p.total_steps > 0
-
-        current_step = self.p.step_index + 1        
-        if has_total_steps:
-            current_step = min(current_step, self.p.total_steps) # cap it to total_steps if known
-            step_str = f"Step {current_step}/{self.p.total_steps}"
-        else:
-            step_str = f"Step {current_step}"
+        step_str = self.get_step_string
+        if step_str is None:
+            return None
         
-        return f"Ch{self.p.current_channel + 1} {step_str}"
+        return f"Ch{self.p.current_channel + 1} Step {step_str}"
 
     # -----------------------------
     # Duration

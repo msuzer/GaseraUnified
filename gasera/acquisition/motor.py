@@ -138,6 +138,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         # reset cycle UI
         self.progress.percent = 0
         self.progress.overall_percent = 0
+        self.progress.step_index = 0
         self.progress.total_steps = self.progress.enabled_count  # per-cycle
         self.progress.repeat_total = 0
         self._cycle_start_timestamp = time.time()
@@ -178,7 +179,8 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             # Accumulate completed (or partial) cycle time
             if self._cycle_start_timestamp is not None:
                 self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
-            # self._cycle_start_timestamp = None
+            # Clear cycle timestamp so armed/waiting time isn't counted
+            self._cycle_start_timestamp = None
             # Between cycles we show 0/TT (armed)
             self.progress.elapsed_seconds = 0.0
             self._cycle_in_progress = False
@@ -292,11 +294,28 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             self.progress.elapsed_seconds = 0.0
 
     def _finalize_run(self) -> None:
-        if self._cycle_start_timestamp is not None:
-            # self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
+        # Set final accumulated duration for the summary screen.
+        # Use accumulated seconds if any repeats occurred; otherwise leave total duration unset
+        # to avoid showing a per-cycle estimate when no repeats were run.
+        try:
+            # If a cycle was still marked as started, include its partial time
+            if self._cycle_start_timestamp is not None:
+                self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
+            # Clear cycle timestamp
             self._cycle_start_timestamp = None
-            self.progress.elapsed_seconds = float(self._accumulated_seconds)
-            self.progress.tt_seconds = float(self._accumulated_seconds)
-            
+
+            # If we have accumulated time, present it as both elapsed and total for summary
+            if self._accumulated_seconds > 0.0:
+                self.progress.elapsed_seconds = float(self._accumulated_seconds)
+                self.progress.tt_seconds = float(self._accumulated_seconds)
+            else:
+                # No repeats -> don't present a misleading per-cycle total
+                self.progress.elapsed_seconds = 0.0
+                self.progress.tt_seconds = None
+        except Exception:
+            # Fallback: ensure sensible defaults
+            self.progress.elapsed_seconds = float(self._accumulated_seconds or 0.0)
+            self.progress.tt_seconds = float(self._accumulated_seconds) if self._accumulated_seconds else None
+
         info("[ENGINE] finalizing motor measurement task")
         

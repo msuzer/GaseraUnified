@@ -168,7 +168,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         # Mark channel as sampled (memory only, no disk write)
         vch = self.progress.current_channel
         self.cfg.include_channels[vch] = ChannelState.SAMPLED
-        prefs.update_from_dict({KEY_INCLUDE_CHANNELS: self.cfg.include_channels}, write_disk=False)
+        services.preferences_service.update_from_dict({KEY_INCLUDE_CHANNELS: self.cfg.include_channels}, write_disk=False)
         debug(f"[ENGINE] Channel {vch} marked as sampled")
 
         return True
