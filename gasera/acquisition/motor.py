@@ -3,23 +3,14 @@
 # ============================================================
 from __future__ import annotations
 
-from dataclasses import dataclass
-import time
-
 from gasera.acquisition.task_event import TaskEvent
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
 from system.log_utils import info, warn
 from system import services
-from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, BaseAcquisitionEngine, TaskConfig
+from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, BaseAcquisitionEngine
 from gasera.acquisition.phase import Phase
 from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME
-
-from system.preferences import (
-    KEY_MEASUREMENT_DURATION,
-    KEY_PAUSE_SECONDS,
-    KEY_MOTOR_TIMEOUT,
-)
 
 class MotorAcquisitionEngine(BaseAcquisitionEngine):
     """
@@ -36,26 +27,15 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._armed_waiting_for_repeat = False
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
-        prefs = services.preferences_service
-        cfg = TaskConfig(
-            measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 100)),
-            pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 5)),
-            actuator_ids=DEFAULT_ACTUATOR_IDS,
-        )
-        if cfg.measure_seconds <= 0:
-            return False, "Invalid measurement duration"
-        if cfg.pause_seconds < 0:
-            return False, "Invalid pause duration"
+        super()._validate_and_load_config()
 
-        self.cfg = cfg
-
-        self.motion_timeout_sec = int(prefs.get(KEY_MOTOR_TIMEOUT, 10))
-        if self.motion_timeout_sec <= 0:
-            return False, "Invalid motor timeout"
+        self.cfg.actuator_ids=DEFAULT_ACTUATOR_IDS
 
         # UI contract fields (unbounded run)
-        self.progress.enabled_count = len(cfg.actuator_ids) # typically 2
-        self.progress.repeat_total = self.progress.repeat_index # unbounded
+        self.progress.enabled_count = len(self.cfg.actuator_ids)
+        self.cfg.repeat_count = 0  # unbounded for motor engine
+
+        self.progress.repeat_total = self.cfg.repeat_count # unbounded, increments after each cycle
         self.progress.total_steps = self.progress.enabled_count  # per-cycle, typically 2
         self.progress.tt_seconds = self.estimate_total_time_seconds() # per-cycle estimate
 
@@ -98,14 +78,8 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             if self._stop_event.is_set() or self._finish_event.is_set():
                 break
 
-            self._task_timer.reset()
-            self._emit_task_event(TaskEvent.CYCLE_STARTED)
             if not self._run_one_cycle():
                 break
-
-            self._emit_task_event(TaskEvent.CYCLE_FINISHED)
-            self.progress.repeat_index += 1
-            self.progress.repeat_total += 1 # repeat_total mirrors repeat_index
 
     def _run_one_cycle(self) -> bool:
         self._cycle_in_progress = True
@@ -116,8 +90,10 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.step_index = 0  # [0, enabled_count], increments per actuator
         self.progress.elapsed_seconds = 0.0
         
-        self._task_timer.start()
-        self._task_cumulative_timer.start()
+        self._task_timer.reset() # per-cycle timer
+        self._task_timer.start() # per-cycle timer
+        self._task_cumulative_timer.start() # cumulative timer
+        self._emit_task_event(TaskEvent.CYCLE_STARTED)
         
         try:
             ok, msg = self._start_measurement()
@@ -149,13 +125,17 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         finally:
             if not self._stop_measurement():
-                warn("[ENGINE] Failed to stop Gasera after cycle")
+                warn("[ENGINE] Failed to stop Gasera after cycle completion")
 
             self._task_timer.pause()
             self._task_cumulative_timer.pause()
             self._cycle_in_progress = False
-            info(f"[ENGINE] Cycle complete. Step Index: {self.progress.step_index}, Total Steps: {self.progress.total_steps}")
             self._emit_progress_event()
+            
+            self.progress.repeat_index += 1
+            self.progress.repeat_total += 1 # repeat_total mirrors repeat_index
+            self._emit_task_event(TaskEvent.CYCLE_FINISHED)
+            info(f"[ENGINE] Cycle complete. Step Index: {self.progress.step_index}, Total Steps: {self.progress.total_steps}")
 
         return True
 
@@ -193,17 +173,17 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
     def estimate_total_time_seconds(self) -> float:
         per_actuator = (
-            float(self.motion_timeout_sec) +   # extend
+            float(self.cfg.motion_timeout) +   # extend
             float(self.cfg.pause_seconds) +    # pause
             float(self.cfg.measure_seconds) +  # measure
-            float(self.motion_timeout_sec) +   # home
+            float(self.cfg.motion_timeout) +   # home
             float(GASERA_CMD_SETTLE_TIME)      # start/stop instructions settling time 
         )
 
         return float(self.progress.total_steps) * per_actuator
 
     def _finalize_run(self) -> None:
-        self._task_timer.overrite_accumulated(self._task_cumulative_timer.elapsed())
-        self.progress.tt_seconds = float(self._task_cumulative_timer.elapsed())
+        self._task_timer.overwrite(self._task_cumulative_timer.elapsed()) # show cumulative time on summary screen
+        self.progress.tt_seconds = float(self._task_cumulative_timer.elapsed())  # show cumulative time on summary screen
 
         info("[ENGINE] finalizing motor measurement task")

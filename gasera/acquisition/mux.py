@@ -8,13 +8,10 @@ from gasera.motion.iface import MotionInterface
 from system.log_utils import debug, info, warn
 from system import services
 
-from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME, SWITCHING_SETTLE_TIME, BaseAcquisitionEngine, TaskConfig
+from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME, SWITCHING_SETTLE_TIME, BaseAcquisitionEngine
 from gasera.acquisition.phase import Phase
 
 from system.preferences import (
-    KEY_MEASUREMENT_DURATION,
-    KEY_PAUSE_SECONDS,
-    KEY_REPEAT_COUNT,
     KEY_INCLUDE_CHANNELS,
     ChannelState,
 )
@@ -31,23 +28,21 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         super().__init__(motion)
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
+        super()._validate_and_load_config()
+
         prefs = services.preferences_service
-        cfg = TaskConfig(
-            measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 100)),
-            pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 5)),
-            repeat_count=int(prefs.get(KEY_REPEAT_COUNT, 1)),
-        )
 
         include_mask = prefs.get(KEY_INCLUDE_CHANNELS, [ChannelState.ACTIVE] * self.TOTAL_CHANNELS)
-        cfg.include_channels = list(include_mask)
-        self.cfg = cfg
+        self.cfg.include_channels = list(include_mask)
 
-        self.progress.enabled_count = sum(1 for s in cfg.include_channels if s > ChannelState.INACTIVE)
+        self.progress.enabled_count = sum(1 for s in self.cfg.include_channels if s > ChannelState.INACTIVE)
         if self.progress.enabled_count == 0:
             warn("[ENGINE] no channels enabled, skipping measurement")
             services.buzzer.play("invalid")
             return False, "No channels enabled"
 
+        self.cfg.motion_timeout = SWITCHING_SETTLE_TIME # const for mux switching
+        
         self.progress.repeat_total = self.cfg.repeat_count
         self.progress.total_steps = self.cfg.repeat_count * self.progress.enabled_count
         self.progress.tt_seconds = self.estimate_total_time_seconds()

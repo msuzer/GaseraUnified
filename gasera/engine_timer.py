@@ -29,7 +29,7 @@ class EngineTimer:
         self._accum = 0.0
         self._last_start = None
         
-    def overrite_accumulated(self, seconds: float) -> None:
+    def overwrite(self, seconds: float) -> None:
         self._accum = seconds
         if self._running:
             self._last_start = time.monotonic()

@@ -26,12 +26,20 @@ from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase
 from gasera.acquisition.progress import Progress
 
+from system.preferences import (
+    KEY_MEASUREMENT_DURATION,
+    KEY_MOTOR_TIMEOUT,
+    KEY_PAUSE_SECONDS,
+    KEY_REPEAT_COUNT,
+)
+
 DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
 
 @dataclass
 class TaskConfig:
     measure_seconds: int
     pause_seconds: int
+    motion_timeout: int
     repeat_count: Optional[int] = None  # mux only
     include_channels: list[int] = field(default_factory=list)
     actuator_ids: tuple[str, ...] = DEFAULT_ACTUATOR_IDS
@@ -57,8 +65,6 @@ class BaseAcquisitionEngine(ABC):
 
         self._last_notified_channel: int = -1
         self._task_timer = EngineTimer()     # measures task active time
-        
-        self.motion_timeout_sec: float = SWITCHING_SETTLE_TIME
 
     def subscribe(self, cb: Callable[[Progress], None]) -> None:
         self._progress_subs.append(cb)
@@ -139,11 +145,6 @@ class BaseAcquisitionEngine(ABC):
         self._worker.join(timeout=2.0)
         return True, "Finished successfully"
 
-    def _can_finish_now(self) -> bool:
-        # motor will override
-        info("[ENGINE] not supported by this engine")
-        return False
-
     def trigger_repeat(self) -> tuple[bool, str]:
         # motor will override
         warn("[ENGINE] trigger_repeat not supported by this engine")
@@ -152,13 +153,26 @@ class BaseAcquisitionEngine(ABC):
     def is_running(self) -> bool:
         return bool(self._worker) and self._worker.is_alive()
 
+    def _can_finish_now(self) -> bool:
+        # motor will override
+        info("[ENGINE] not supported by this engine")
+        return False
+
+    def _validate_and_load_config(self) -> tuple[bool, str]:
+        prefs = services.preferences_service
+        cfg = TaskConfig(
+            measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 300)),
+            pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 300)),
+            repeat_count=int(prefs.get(KEY_REPEAT_COUNT, 1)),
+            motion_timeout=int(prefs.get(KEY_MOTOR_TIMEOUT, 30))
+        )
+
+        self.cfg = cfg
+        return True, "Configuration valid"
+
     # -----------------------------
     # Hooks / abstract methods
     # -----------------------------
-    @abstractmethod
-    def _validate_and_load_config(self) -> tuple[bool, str]:
-        ...
-
     @abstractmethod
     def _on_start_prepare(self) -> tuple[bool, str]:
         """Prepare state before starting the measurement run."""
@@ -186,7 +200,7 @@ class BaseAcquisitionEngine(ABC):
         assert self.cfg is not None
         info(
             f"[ENGINE] start: measure={self.cfg.measure_seconds}s, pause={self.cfg.pause_seconds}s, "
-            f"repeat={self.cfg.repeat_count}, enabled_channels={self.progress.enabled_count}, motion_timeout={self.motion_timeout_sec}s"
+            f"repeat={self.cfg.repeat_count}, enabled_channels={self.progress.enabled_count}, motion_timeout={self.cfg.motion_timeout}s"
         )
 
         try:
@@ -318,7 +332,7 @@ class BaseAcquisitionEngine(ABC):
             services.buzzer.play("step")
 
         self.motion.step(unit_id)
-        ok = self._blocking_wait(duration=self.motion_timeout_sec, notify=True)
+        ok = self._blocking_wait(duration=self.cfg.motion_timeout, notify=True)
         self.motion.reset(unit_id)
 
         return ok
@@ -329,7 +343,7 @@ class BaseAcquisitionEngine(ABC):
         services.buzzer.play("home")
 
         self.motion.home(unit_id)
-        ok = self._blocking_wait(duration=self.motion_timeout_sec, notify=True)
+        ok = self._blocking_wait(duration=self.cfg.motion_timeout, notify=True)
         self.motion.reset(unit_id)
 
         return ok
