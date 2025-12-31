@@ -3,7 +3,6 @@
 # ============================================================
 from __future__ import annotations
 
-import threading
 from dataclasses import dataclass
 import time
 from typing import Optional
@@ -40,15 +39,10 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         super().__init__(motion)
         self.cfg: Optional[MotorTaskConfig] = None
 
-        self._repeat_event = threading.Event()
         self._cycle_in_progress = False
         self._cycle_processed = 0  # completed actuator measurements in current cycle
-        self._cycle_start_timestamp: Optional[float] = None
         self._accumulated_seconds: float = 0.0
         self._armed_waiting_for_repeat = False
-
-    def _start_ok_message(self) -> str:
-        return "Engine started (waiting for repeat trigger)"
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
         prefs = services.preferences_service
@@ -73,17 +67,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.repeat_total = 0
         self.channel_timeout_sec = float(cfg.motor_timeout_sec)
         self.progress.tt_seconds = self.estimate_cycle_time_seconds()
+        self._accumulated_seconds = 0.0
 
         return True, "Configuration valid"
-
-    def _on_start_prepare(self) -> tuple[bool, str]:
-        self._repeat_event.clear()
-        self._accumulated_seconds = 0.0
-        return True, "ok"
-
-    def _on_stop_unblock(self) -> None:
-        # unblock wait()
-        self._repeat_event.set()
 
     def _can_finish_now(self) -> bool:
         info("[ENGINE] checking armed state within motor engine")
@@ -134,7 +120,6 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         assert self.cfg is not None
 
         self._cycle_in_progress = True
-        self._cycle_processed = 0
 
         # reset cycle UI
         self.progress.percent = 0
@@ -142,16 +127,16 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.step_index = 0
         self.progress.total_steps = self.progress.enabled_count  # per-cycle
         self.progress.repeat_total = 0
-        self._cycle_start_timestamp = time.time()
         self.progress.elapsed_seconds = 0.0
-
-        ok, msg = self._start_measurement()
-        if not ok:
-            warn(f"[ENGINE] start_measurement failed: {msg}")
-            self._cycle_in_progress = False
-            return False
+        self._cycle_processed = 0
+        self._start_timestamp = time.time()
 
         try:
+            ok, msg = self._start_measurement()
+            if not ok:
+                warn(f"[ENGINE] start_measurement failed: {msg}")
+                return False
+
             for idx, actuator_id in enumerate(self.cfg.actuator_ids):
                 if self._stop_event.is_set():
                     return False
@@ -179,14 +164,12 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 warn("[ENGINE] Failed to stop Gasera after cycle")
 
             # Accumulate completed (or partial) cycle time
-            if self._cycle_start_timestamp is not None:
-                self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
+            if self._start_timestamp is not None:
+                self._accumulated_seconds += max(0.0, time.time() - self._start_timestamp)
             # Clear cycle timestamp so armed/waiting time isn't counted
-            self._cycle_start_timestamp = None
-            # Between cycles we show 0/TT (armed)
-            self.progress.elapsed_seconds = 0.0
+            self._start_timestamp = None
             self._cycle_in_progress = False
-            
+
         return True
 
     def _run_actuator_sequence(self, actuator_id: str) -> bool:
@@ -247,39 +230,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME
         return per_actuator * len(self.cfg.actuator_ids) + GASERA_CMD_SETTLE_TIME
-    
-    def _refresh_derived_progress(self) -> None:
-        if self._cycle_start_timestamp is not None:
-            self.progress.elapsed_seconds = max(
-                0.0, time.time() - self._cycle_start_timestamp
-            )
-        else:
-            # Idle / armed
-            self.progress.elapsed_seconds = 0.0
 
     def _finalize_run(self) -> None:
-        # Set final accumulated duration for the summary screen.
-        # Use accumulated seconds if any repeats occurred; otherwise leave total duration unset
-        # to avoid showing a per-cycle estimate when no repeats were run.
-        try:
-            # If a cycle was still marked as started, include its partial time
-            if self._cycle_start_timestamp is not None:
-                self._accumulated_seconds += max(0.0, time.time() - self._cycle_start_timestamp)
-            # Clear cycle timestamp
-            self._cycle_start_timestamp = None
-
-            # If we have accumulated time, present it as both elapsed and total for summary
-            if self._accumulated_seconds > 0.0:
-                self.progress.elapsed_seconds = float(self._accumulated_seconds)
-                self.progress.tt_seconds = float(self._accumulated_seconds)
-            else:
-                # No repeats -> don't present a misleading per-cycle total
-                self.progress.elapsed_seconds = 0.0
-                self.progress.tt_seconds = None
-        except Exception:
-            # Fallback: ensure sensible defaults
-            self.progress.elapsed_seconds = float(self._accumulated_seconds or 0.0)
-            self.progress.tt_seconds = float(self._accumulated_seconds) if self._accumulated_seconds else None
+        self.progress.elapsed_seconds = float(self._accumulated_seconds)
+        self.progress.tt_seconds = float(self._accumulated_seconds)
 
         info("[ENGINE] finalizing motor measurement task")
-        

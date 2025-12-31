@@ -49,6 +49,7 @@ class BaseAcquisitionEngine(ABC):
         self._worker: Optional[threading.Thread] = None
         self._stop_event = threading.Event()     # abort / error
         self._finish_event = threading.Event()   # graceful end
+        self._repeat_event = threading.Event()
         self._lock = threading.RLock()
 
         self.progress = Progress()
@@ -97,6 +98,7 @@ class BaseAcquisitionEngine(ABC):
 
             self._stop_event.clear()
             self._finish_event.clear()
+            self._repeat_event.clear()
 
             ok, msg = self._validate_and_load_config()
             if not ok:
@@ -125,13 +127,13 @@ class BaseAcquisitionEngine(ABC):
             self._worker = threading.Thread(target=self._run_loop_wrapper, daemon=True)
             self._worker.start()
 
-            return True, self._start_ok_message()
+            return True, "Measurement Task started"
 
     def abort(self) -> tuple[bool, str]:
         # Forcefully stop the current task.
         if self.is_running():
             self._stop_event.set()
-            self._on_stop_unblock()
+            self._repeat_event.set()
             self._worker.join(timeout=2.0)
             return True, "Aborted successfully"
         return False, "Not running"
@@ -142,7 +144,7 @@ class BaseAcquisitionEngine(ABC):
             return False, "Finish not allowed in current state"
 
         self._finish_event.set()
-        self._on_stop_unblock()
+        self._repeat_event.set()
         self._worker.join(timeout=2.0)
         return True, "Finished successfully"
 
@@ -172,13 +174,6 @@ class BaseAcquisitionEngine(ABC):
         Default: ok.
         """
         return True, "ok"
-
-    def _start_ok_message(self) -> str:
-        return "Engine started"
-
-    def _on_stop_unblock(self) -> None:
-        """Subclass may unblock wait primitives (e.g., repeat_event)."""
-        return
 
     @abstractmethod
     def _run_loop(self) -> None:

@@ -41,9 +41,6 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         super().__init__(motion)
         self.cfg: Optional[MuxTaskConfig] = None
 
-    def _start_ok_message(self) -> str:
-        return "Measurement Task started"
-
     def _validate_and_load_config(self) -> tuple[bool, str]:
         prefs = services.preferences_service
         cfg = MuxTaskConfig(
@@ -75,9 +72,6 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.repeat_total = self.cfg.repeat_count
         self.progress.total_steps = self.cfg.repeat_count * self.progress.enabled_count
         self.progress.tt_seconds = self.estimate_total_time_seconds()
-        # set engine channel timeout for motion helpers
-        self.channel_timeout_sec = SWITCHING_SETTLE_TIME
-        
         self._emit_task_event(TaskEvent.TASK_STARTED)
         
         return True, "ok"
