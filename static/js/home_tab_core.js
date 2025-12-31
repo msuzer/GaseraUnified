@@ -293,6 +293,7 @@ function SSEHandler(d) {
       window.updateChannelInfo?.(ch, newPhase);
     }
 
+    // console.log(`[SSE] Phase: ${newPhase}, Channel: ${ch}, Repeat: ${rep}, Percent: ${pct}% step ${stepIndex}/${enabledCount}`);
     // Update progress circles on every SSE event (idempotent)
     window.updateRepeatInfo?.(rep, repeatTotal);
     window.updateCycleProgress?.(pct, stepIndex, enabledCount);

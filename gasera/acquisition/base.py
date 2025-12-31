@@ -8,12 +8,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import threading
 import time
 
 from abc import ABC, abstractmethod
 from typing import List, Optional, Callable
 
+from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
 from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
@@ -24,26 +26,21 @@ from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase
 from gasera.acquisition.progress import Progress
 
-from system.preferences import (
-    KEY_ONLINE_MODE_ENABLED,
-)
+DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
+
+@dataclass
+class TaskConfig:
+    measure_seconds: int
+    pause_seconds: int
+    repeat_count: Optional[int] = None  # mux only
+    include_channels: list[int] = field(default_factory=list)
+    actuator_ids: tuple[str, ...] = DEFAULT_ACTUATOR_IDS
 
 # Timing constants
 SWITCHING_SETTLE_TIME = 5.0          # mux settle time
 GASERA_CMD_SETTLE_TIME = 1.0         # allow Gasera to process mode/start/stop
-DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
 
 class BaseAcquisitionEngine(ABC):
-    """
-    Shared engine shell:
-    - thread lifecycle
-    - stop handling
-    - notify/progress refresh
-    - gasera helpers
-    - logging init/close
-    Subclasses implement the run loop semantics and configuration.
-    """
-
     def __init__(self, motion: MotionInterface):
         self.motion = motion
         self._worker: Optional[threading.Thread] = None
@@ -51,36 +48,34 @@ class BaseAcquisitionEngine(ABC):
         self._finish_event = threading.Event()   # graceful end
         self._repeat_event = threading.Event()
         self._lock = threading.RLock()
-
-        self.progress = Progress()
-        
-        self._progress_subs: List[Callable] = []
-        self._display_task_subs: List[Callable] = []
-
         self.logger: Optional[MeasurementLogger] = None
 
-        self._last_notified_vch: int = -1
-        self._start_timestamp: Optional[float] = None
-        # per-channel movement timeout (seconds). Subclasses may set this
-        # (e.g., MUX uses SWITCHING_SETTLE_TIME, Motor uses cfg.motor_timeout_sec)
-        self.channel_timeout_sec: float = SWITCHING_SETTLE_TIME
+        self.cfg: Optional[TaskConfig] = None
+        self.progress = Progress()
+        self._progress_subs: List[Callable] = []
+        self._task_event_subs: List[Callable] = []
+
+        self._last_notified_channel: int = -1
+        self._task_timer = EngineTimer()     # measures task active time
+        
+        self.motion_timeout_sec: float = SWITCHING_SETTLE_TIME
 
     def subscribe(self, cb: Callable[[Progress], None]) -> None:
         self._progress_subs.append(cb)
 
     def subscribe_task_event(self, cb: Callable[[TaskEvent], None]) -> None:
-        self._display_task_subs.append(cb)
+        self._task_event_subs.append(cb)
 
     def _emit_progress_event(self):
-        self._refresh_derived_progress()
+        self.progress.elapsed_seconds = self._task_timer.elapsed()
         for cb in self._progress_subs:
             try:
                 cb(self.progress)
-            except Exception as e:
-                warn(f"[ENGINE] notify error: {e}")
+            except Exception:
+                pass
 
     def _emit_task_event(self, event: TaskEvent):
-        for cb in self._display_task_subs:
+        for cb in self._task_event_subs:
             try:
                 cb(event)
             except Exception:
@@ -96,10 +91,7 @@ class BaseAcquisitionEngine(ABC):
                 services.buzzer.play("busy")
                 return False, "Measurement already running"
 
-            self._stop_event.clear()
-            self._finish_event.clear()
-            self._repeat_event.clear()
-
+            self.progress.reset_all() # clear previous state right here before load config
             ok, msg = self._validate_and_load_config()
             if not ok:
                 services.buzzer.play("invalid")
@@ -119,11 +111,10 @@ class BaseAcquisitionEngine(ABC):
             log_path = get_log_directory()
             self.logger = MeasurementLogger(log_path)
 
-            self.progress.reset_runtime()
-            self._set_phase(Phase.IDLE)   # explicit, safe
-            # self._emit_task_event(TaskEvent.TASK_STARTED)
+            self._stop_event.clear()
+            self._finish_event.clear()
+            self._repeat_event.clear()
 
-            self._start_timestamp = time.time()
             self._worker = threading.Thread(target=self._run_loop_wrapper, daemon=True)
             self._worker.start()
 
@@ -138,7 +129,7 @@ class BaseAcquisitionEngine(ABC):
             return True, "Aborted successfully"
         return False, "Not running"
 
-    def finish(self):
+    def finish(self) -> tuple[bool, str]:
         # Gracefully finish the current task.
         if not self._can_finish_now():
             return False, "Finish not allowed in current state"
@@ -150,16 +141,16 @@ class BaseAcquisitionEngine(ABC):
 
     def _can_finish_now(self) -> bool:
         # motor will override
-        info("[ENGINE] checking armed state within base engine")
+        info("[ENGINE] not supported by this engine")
         return False
+
+    def trigger_repeat(self) -> tuple[bool, str]:
+        # motor will override
+        warn("[ENGINE] trigger_repeat not supported by this engine")
+        return False, "repeat not supported"
 
     def is_running(self) -> bool:
         return bool(self._worker) and self._worker.is_alive()
-
-    def trigger_repeat(self) -> tuple[bool, str]:
-        # Default: not supported unless subclass overrides.
-        warn("[ENGINE] trigger_repeat not supported by this engine")
-        return False, "repeat not supported"
 
     # -----------------------------
     # Hooks / abstract methods
@@ -168,12 +159,15 @@ class BaseAcquisitionEngine(ABC):
     def _validate_and_load_config(self) -> tuple[bool, str]:
         ...
 
+    @abstractmethod
     def _on_start_prepare(self) -> tuple[bool, str]:
-        """
-        Subclass hook called inside start() after config + SONL applied, before thread starts.
-        Default: ok.
-        """
-        return True, "ok"
+        """Prepare state before starting the measurement run."""
+        ...
+
+    @abstractmethod
+    def estimate_total_time_seconds(self) -> float:
+        """Estimate total time for the entire measurement task."""
+        ...
 
     @abstractmethod
     def _run_loop(self) -> None:
@@ -189,11 +183,17 @@ class BaseAcquisitionEngine(ABC):
     # Worker wrapper
     # -----------------------------
     def _run_loop_wrapper(self):
+        assert self.cfg is not None
+        info(
+            f"[ENGINE] start: measure={self.cfg.measure_seconds}s, pause={self.cfg.pause_seconds}s, "
+            f"repeat={self.cfg.repeat_count}, enabled_channels={self.progress.enabled_count}, motion_timeout={self.motion_timeout_sec}s"
+        )
+
         try:
             self._run_loop()
         finally:
             self._finalize_run()
-                        
+
             if self._stop_event.is_set():
                 self._stop_event.clear()
                 self._set_phase(Phase.ABORTED)
@@ -209,14 +209,14 @@ class BaseAcquisitionEngine(ABC):
         if not self.check_gasera_idle():
             if not self._stop_measurement():
                 warn("[ENGINE] Failed to stop Gasera during finalization")
-            
-            # Shared close-out
-            if self.logger:
-                try:
-                    self.logger.close()
-                except Exception:
-                    pass
-                self.logger = None
+
+        # Shared close-out
+        if self.logger:
+            try:
+                self.logger.close()
+            except Exception:
+                pass
+            self.logger = None
 
     # -----------------------------
     # Shared helpers
@@ -224,13 +224,11 @@ class BaseAcquisitionEngine(ABC):
     def _apply_online_mode_preference(self) -> tuple[bool, str]:
         """Apply SONL/online mode to Gasera (preference is inverted)."""
         try:
+            from system.preferences import KEY_ONLINE_MODE_ENABLED
             save_on_gasera = bool(services.preferences_service.get(KEY_ONLINE_MODE_ENABLED, False))
             desired_online_mode = not save_on_gasera  # invert semantics for SONL
             resp_online = services.gasera_controller.set_online_mode(desired_online_mode)
-            info(
-                f"[ENGINE] Applied SONL online_mode={'enabled' if desired_online_mode else 'disabled'} "
-                f"(save_on_gasera={'yes' if save_on_gasera else 'no'}) resp={resp_online}"
-            )
+            info(f"[ENGINE] Save On Gasera is {'enabled' if save_on_gasera else 'disabled'} resp={resp_online}")
             time.sleep(GASERA_CMD_SETTLE_TIME)
             return True, "SONL mode applied"
         except Exception as e:
@@ -301,19 +299,14 @@ class BaseAcquisitionEngine(ABC):
     def _set_phase(self, phase: str):
         changed = False
         with self._lock:
-            if self.progress.phase != phase or self._last_notified_vch != self.progress.current_channel:
+            if self.progress.phase != phase or self._last_notified_channel != self.progress.current_channel:
                 self.progress.phase = phase
-                self._last_notified_vch = self.progress.current_channel
+                self._last_notified_channel = self.progress.current_channel
                 changed = True
 
         if changed:
             info(f"[ENGINE] phase -> {phase}")
             self._emit_progress_event()
-
-    def _refresh_derived_progress(self) -> None:
-        # elapsed_seconds is always meaningful
-        if self._start_timestamp is not None:
-            self.progress.elapsed_seconds = max(0.0, time.time() - float(self._start_timestamp))
 
     # -----------------------------
     # Motion helpers
@@ -325,7 +318,7 @@ class BaseAcquisitionEngine(ABC):
             services.buzzer.play("step")
 
         self.motion.step(unit_id)
-        ok = self._blocking_wait(duration=self.channel_timeout_sec, notify=True)
+        ok = self._blocking_wait(duration=self.motion_timeout_sec, notify=True)
         self.motion.reset(unit_id)
 
         return ok
@@ -336,7 +329,7 @@ class BaseAcquisitionEngine(ABC):
         services.buzzer.play("home")
 
         self.motion.home(unit_id)
-        ok = self._blocking_wait(duration=self.channel_timeout_sec, notify=True)
+        ok = self._blocking_wait(duration=self.motion_timeout_sec, notify=True)
         self.motion.reset(unit_id)
 
         return ok

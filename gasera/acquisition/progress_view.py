@@ -19,7 +19,8 @@ class ProgressView:
 
         has_total_steps = self.p.total_steps is not None and self.p.total_steps > 0
         # `step_index` represents the number of completed measurements.
-        completed = max(0, int(self.p.step_index))
+        # self.progress.step_index = repeat_index * self.progress.enabled_count + steps_completed_in_single_repeat
+        completed = self.p.repeat_index * self.p.enabled_count + self.p.step_index
         if has_total_steps:
             completed = min(completed, self.p.total_steps)
             step_str = f"{completed}/{self.p.total_steps}"

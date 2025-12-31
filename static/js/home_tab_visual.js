@@ -64,7 +64,10 @@ window.updateRepeatInfo = function (rep, repeatTotal) {
 
 window.updateCycleProgress = function (pct, stepIndex, enabledCount) {
     const total = enabledCount || 0;
-    const completedInCycle = total > 0 ? (stepIndex % total) : 0;
+    if (stepIndex > total) {
+        stepIndex = total;
+    }
+    const completedInCycle = total > 0 ? stepIndex : 0;
     updateProgressCircle(runCircle, runPct, pct, `${completedInCycle}/${total}`);
 };
 
