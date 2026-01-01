@@ -2,14 +2,36 @@
    Semantic + Material Variables (single source of truth)
 ========================================================= */
 :root {
-  /* semantic (aligned with jars) */
-  --state-ready: #4c6ef5;
-  --state-active: #2ecc71;
-  --state-paused: #f1c40f;
-  --state-abort: #e74c3c;
+  /* =====================================================
+     Phase Colors — aligned with dashboard & start button
+     ===================================================== */
+
+  /* --phase-idle: #b58933;*/
+  --phase-idle: #adb5bd;
+  /* amber / ready-idle */
+  --phase-armed: #0d6efd;
+  /* bootstrap blue */
+  --phase-switching: #0d6efd;
+  /* same as armed, animated */
+  /* --phase-measuring: #ffc107;*/
+  --phase-measuring: #2ecc71;
+  /* yellow */
+  /* --phase-paused: #0d6efd;*/
+  --phase-paused: #f1c40f;
+  /* blue */
+  --phase-homing: #6f42c1;
+  /* purple */
+  --phase-abort: #dc3545;
+  /* red */
+
+  /* aliases used elsewhere */
+  --state-ready: var(--phase-armed);
+  --state-active: var(--phase-measuring);
+  --state-paused: var(--phase-paused);
+  --state-abort: var(--phase-abort);
   --state-disabled: #cfd4da;
 
-  /* materials */
+  /* materials (unchanged) */
   --metal-light: #e5e7eb;
   --metal-mid: #cfd4da;
   --metal-dark: #9aa0a6;
@@ -17,11 +39,10 @@
   --ground-dark: #6b5e4b;
   --ground-light: #8a7a63;
 
-  /* flow */
   --flow-speed-measure: 0.9s;
   --flow-speed-pause: 2.5s;
 
-  --rover-scale: 1.0; /* try 1.1 – 1.4 */
+  --rover-scale: 1.0;
 }
 
 /* =========================================================
@@ -62,42 +83,150 @@
   position: absolute;
   top: 0;
   left: 50%;
-  width: 64px;
-  height: 40px;
+  width: 68px;
+  height: 42px;
   transform: translateX(-50%);
-  background: linear-gradient(to bottom, var(--metal-light), var(--metal-mid));
-  border-radius: 6px;
-  border: 1px solid var(--metal-dark);
+  background: linear-gradient(to bottom, #e9ecef, #dfe3e6);
+  border-radius: 6px 6px 8px 8px;
+  /* subtle asymmetry */
+  border: 1px solid #9aa0a6;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
 }
 
+#motor-rover-card.phase-measuring .rover-head {
+  animation: head-alive 3s ease-in-out infinite;
+}
+
+@keyframes head-alive {
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(5px);
+  }
+
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* =========================================================
+   Sensor LED Aperture (NOT an eye)
+========================================================= */
+/* =========================================================
+   Sensor LED Window (industrial, not eye-like)
+========================================================= */
 .camera-eye {
   position: absolute;
   top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  background: #111;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  background: #1b1b1b;
+  /* bezel */
   border-radius: 50%;
+  border: 2px solid #2f2f2f;
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.9);
 }
 
-.camera-eye::after {
+.camera-eye::before {
   content: "";
   position: absolute;
   inset: 5px;
-  background: #00c3ff;
   border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%,
+      rgba(255, 255, 255, 0.25),
+      transparent 60%);
+  pointer-events: none;
 }
+
+/* LED glass */
+.camera-eye::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  /* <-- THIS is the key */
+  background: var(--phase-idle);
+  /* idle */
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 2px rgba(255, 255, 255, 0.3);
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.3s ease;
+}
+
+/* ARMED */
+#motor-rover-card.phase-armed .camera-eye::after {
+  background: var(--state-ready);
+  box-shadow:
+    inset 0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 6px var(--state-ready);
+}
+
+/* SWITCHING */
+#motor-rover-card.phase-switching .camera-eye::after {
+  background: var(--state-ready);
+  box-shadow:
+    inset 0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 10px var(--state-ready);
+}
+
+/* MEASURING */
+#motor-rover-card.phase-measuring .camera-eye::after {
+  background: var(--state-active);
+  box-shadow:
+    inset 0 0 3px rgba(255, 255, 255, 0.5),
+    0 0 14px var(--state-active);
+}
+
+/* PAUSED */
+#motor-rover-card.phase-paused .camera-eye::after {
+  background: var(--state-paused);
+  box-shadow:
+    inset 0 0 3px rgba(255, 255, 255, 0.4),
+    0 0 12px var(--state-paused);
+}
+
+/* ABORTED */
+#motor-rover-card.phase-aborted .camera-eye::after {
+  background: var(--state-abort);
+  box-shadow:
+    inset 0 0 3px rgba(255, 255, 255, 0.4),
+    0 0 14px var(--state-abort);
+}
+
 
 #motor-rover-card.phase-measuring .camera-eye::after {
-  box-shadow: 0 0 12px var(--state-active);
+  animation: sensor-led-pulse 1.6s ease-in-out infinite;
 }
 
-#motor-rover-card.phase-paused .camera-eye::after {
-  box-shadow: 0 0 10px var(--state-paused);
+@keyframes sensor-led-pulse {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
 }
 
-#motor-rover-card.phase-aborted .camera-eye::after {
-  box-shadow: 0 0 10px var(--state-abort);
+.aux-sensor {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  background: #200ac8;
+  border-radius: 2px;
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.6);
 }
 
 /* ---------- Mast ---------- */
@@ -117,8 +246,10 @@
   position: absolute;
   top: 72px;
   left: 50%;
-  width: 200px;        /* wider */
-  height: 50px;        /* taller */
+  width: 200px;
+  /* wider */
+  height: 50px;
+  /* taller */
   transform: translateX(-50%);
   background: linear-gradient(to bottom, #f1f3f5, #dee2e6);
   border-radius: 14px;
@@ -133,7 +264,7 @@
 .vent {
   width: 14px;
   height: 16px;
-  background: #ffd166; /* idle yellow */
+  background: var(--phase-idle);
   border-radius: 3px;
   transition: background 0.3s ease;
 }
@@ -143,15 +274,41 @@
 ========================================================= */
 
 /* Measuring: flowing R → Y → G */
+#motor-rover-card.phase-switching .vent,
+#motor-rover-card.phase-homing .vent,
+#motor-rover-card.phase-paused .vent,
 #motor-rover-card.phase-measuring .vent {
   animation: vent-measure 1.4s ease-in-out infinite;
 }
 
 /* Phase offset for sweep effect */
-#motor-rover-card.phase-measuring .vent:nth-child(1) { animation-delay: 0s; }
-#motor-rover-card.phase-measuring .vent:nth-child(2) { animation-delay: 0.25s; }
-#motor-rover-card.phase-measuring .vent:nth-child(3) { animation-delay: 0.50s; }
-#motor-rover-card.phase-measuring .vent:nth-child(4) { animation-delay: 0.75s; }
+#motor-rover-card.phase-homing .vent:nth-child(1),
+#motor-rover-card.phase-switching .vent:nth-child(1),
+#motor-rover-card.phase-paused .vent:nth-child(1),
+#motor-rover-card.phase-measuring .vent:nth-child(1) {
+  animation-delay: 0s;
+}
+
+#motor-rover-card.phase-homing .vent:nth-child(2),
+#motor-rover-card.phase-switching .vent:nth-child(2),
+#motor-rover-card.phase-paused .vent:nth-child(2),
+#motor-rover-card.phase-measuring .vent:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+#motor-rover-card.phase-homing .vent:nth-child(3),
+#motor-rover-card.phase-switching .vent:nth-child(3),
+#motor-rover-card.phase-paused .vent:nth-child(3),
+#motor-rover-card.phase-measuring .vent:nth-child(3) {
+  animation-delay: 0.50s;
+}
+
+#motor-rover-card.phase-homing .vent:nth-child(4),
+#motor-rover-card.phase-switching .vent:nth-child(4),
+#motor-rover-card.phase-paused .vent:nth-child(4),
+#motor-rover-card.phase-measuring .vent:nth-child(4) {
+  animation-delay: 0.75s;
+}
 
 @keyframes vent-measure {
   0%   { background: #e74c3c; } /* red */
@@ -160,19 +317,8 @@
   100% { background: #f1c40f; } /* yellow */
 }
 
-#motor-rover-card.phase-paused .vent {
-  background: #f1c40f;
-  animation: vent-paused 2.5s ease-in-out infinite;
-}
-
-@keyframes vent-paused {
-  0%   { opacity: 0.5; }
-  50%  { opacity: 1; }
-  100% { opacity: 0.5; }
-}
-
 #motor-rover-card.phase-aborted .vent {
-  background: #e74c3c;
+  background: var(--phase-abort);
   animation: none;
 }
 
@@ -345,8 +491,8 @@
 /* sealed (color + compression) */
 .arm.sealed .seal-ring {
   height: 8px;
-  background: var(--state-active);
-  box-shadow: 0 0 12px rgba(46, 204, 113, 0.9);
+  background: var(--phase-measuring);
+  box-shadow: 0 0 12px var(--phase-measuring);
   transform: scaleX(1.15);
 }
 
@@ -400,8 +546,8 @@
   background:
     linear-gradient(to top,
       transparent 15%,
-      rgba(46, 204, 113, 1) 45%,
-      rgba(46, 204, 113, 1) 55%,
+      var(--phase-measuring) 45%,
+      var(--phase-measuring) 55%,
       transparent 85%);
   opacity: 1;
   animation: flow-up var(--flow-speed-measure) linear infinite;
@@ -412,7 +558,7 @@
   background:
     linear-gradient(to top,
       transparent 20%,
-      rgba(241, 196, 15, 0.9) 50%,
+      var(--phase-paused) 50%,
       transparent 80%);
   opacity: 1;
   animation: flow-up var(--flow-speed-pause) linear infinite;
@@ -423,7 +569,7 @@
   background:
     linear-gradient(to top,
       transparent,
-      rgba(46, 204, 113, 0.9),
+      var(--phase-active),
       transparent);
   opacity: 1;
   animation: flow-once 0.6s ease-out 1;
