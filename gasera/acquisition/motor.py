@@ -3,19 +3,23 @@
 # ============================================================
 from __future__ import annotations
 
+from system import services
 from gasera.acquisition.task_event import TaskEvent
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
 from system.log_utils import info, warn
-from system import services
-from gasera.acquisition.base import DEFAULT_ACTUATOR_IDS, BaseAcquisitionEngine
 from gasera.acquisition.phase import Phase
-from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME
+
+from gasera.acquisition.base import (
+    BaseAcquisitionEngine,
+    GASERA_CMD_SETTLE_TIME
+)
+
+DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
 
 class MotorAcquisitionEngine(BaseAcquisitionEngine):
     """
     User-triggered cycles:
-    - start() starts thread + homes actuators + goes IDLE
     - trigger_repeat() runs exactly one cycle (left then right), then returns to IDLE
     """
 
@@ -183,7 +187,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         return float(self.progress.total_steps) * per_actuator
 
     def _finalize_run(self) -> None:
-        self._task_timer.overwrite(self._task_cumulative_timer.elapsed()) # show cumulative time on summary screen
-        self.progress.tt_seconds = float(self._task_cumulative_timer.elapsed())  # show cumulative time on summary screen
+        cap = self.progress.repeat_index * float(self.progress.tt_seconds)
+        cumulative = self._task_cumulative_timer.elapsed()
+        if cumulative > cap:
+            cumulative = cap
+        self._task_timer.overwrite(cumulative) # show cumulative time on summary screen
+        self.progress.tt_seconds = float(cumulative)  # show cumulative time on summary screen
 
         info("[ENGINE] finalizing motor measurement task")

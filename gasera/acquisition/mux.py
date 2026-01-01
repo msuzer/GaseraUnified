@@ -3,17 +3,21 @@
 # ============================================================
 from __future__ import annotations
 
+from system import services
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
 from system.log_utils import debug, info, warn
-from system import services
-
-from gasera.acquisition.base import GASERA_CMD_SETTLE_TIME, SWITCHING_SETTLE_TIME, BaseAcquisitionEngine
 from gasera.acquisition.phase import Phase
 
+from gasera.acquisition.base import (
+    BaseAcquisitionEngine,
+    GASERA_CMD_SETTLE_TIME,
+    SWITCHING_SETTLE_TIME
+)
+
 from system.preferences import (
-    KEY_INCLUDE_CHANNELS,
     ChannelState,
+    KEY_INCLUDE_CHANNELS
 )
 
 class MuxAcquisitionEngine(BaseAcquisitionEngine):
@@ -165,4 +169,9 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
 
     def _finalize_run(self) -> None:
         self._task_timer.pause()
+        cap = float(self.progress.tt_seconds)
+        elapsed = self._task_timer.elapsed()
+        if elapsed > cap:
+            elapsed = cap
+        self._task_timer.overwrite(elapsed) # show cumulative time on summary screen
         info("[ENGINE] finalizing MUX measurement task")

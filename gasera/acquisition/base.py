@@ -8,19 +8,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-import threading
 import time
+import threading
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import List, Optional, Callable
 
+from system import services
+from gasera.controller import TaskIDs
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
 from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
-from system import services
-from gasera.controller import TaskIDs
 from gasera.measurement_logger import MeasurementLogger
 from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase
@@ -33,7 +33,9 @@ from system.preferences import (
     KEY_REPEAT_COUNT,
 )
 
-DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
+SWITCHING_SETTLE_TIME = 5.0          # mux settle time
+GASERA_CMD_SETTLE_TIME = 1.0         # allow Gasera to process mode/start/stop
+
 
 @dataclass
 class TaskConfig:
@@ -41,12 +43,8 @@ class TaskConfig:
     pause_seconds: int
     motion_timeout: int
     repeat_count: Optional[int] = None  # mux only
-    include_channels: list[int] = field(default_factory=list)
-    actuator_ids: tuple[str, ...] = DEFAULT_ACTUATOR_IDS
-
-# Timing constants
-SWITCHING_SETTLE_TIME = 5.0          # mux settle time
-GASERA_CMD_SETTLE_TIME = 1.0         # allow Gasera to process mode/start/stop
+    include_channels: Optional[list[int]] = field(default_factory=list)  # mux only
+    actuator_ids: Optional[tuple[str, ...]] = None  # motor only
 
 class BaseAcquisitionEngine(ABC):
     def __init__(self, motion: MotionInterface):
