@@ -2,7 +2,10 @@
 
 from dataclasses import dataclass
 from typing import Optional
+from gasera.acquisition.motor import MotorAcquisitionEngine
+from gasera.acquisition.mux import MuxAcquisitionEngine
 from gasera.acquisition.progress import Progress
+from system import services
 from system.utils import format_duration, format_consistent_pair
 
 @dataclass(frozen=True)
@@ -23,19 +26,36 @@ class ProgressView:
         completed = self.p.repeat_index * self.p.enabled_count + self.p.step_index
         if has_total_steps:
             completed = min(completed, self.p.total_steps)
-            step_str = f"{completed}/{self.p.total_steps}"
+            step_str = f"{completed}/{self.p.total_steps} step(s)"
         else:
-            step_str = f"{completed}"
+            step_str = f"{completed} step(s)"
 
         return step_str
     
     @property
-    def step_done_label(self) -> Optional[str]:
-        step_str = self.get_step_string
-        if step_str is None:
+    def get_repeat_string(self) -> Optional[str]:
+        if self.p is None or self.p.repeat_index is None:
             return None
 
-        return f"Done: {step_str} steps"
+        if self.p.repeat_total is not None:
+            return f"{self.p.repeat_total} repeat(s)"
+        else:
+            return None
+
+    @property
+    def step_done_label(self) -> Optional[str]:
+        engine = services.engine_service
+        progress_str: Optional[str] = None
+        if engine:
+            if isinstance(engine, MuxAcquisitionEngine):
+                progress_str = self.get_step_string
+            elif isinstance(engine, MotorAcquisitionEngine):
+                progress_str = self.get_repeat_string
+            
+        if progress_str is None:
+            return None
+
+        return f"Done: {progress_str}"
 
     @property
     def channel_step_label(self) -> Optional[str]:

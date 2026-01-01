@@ -239,11 +239,25 @@ btnAbort.addEventListener("click", () => {
 let currentChannel = -1;
 let currentPhase = null;
 
+function getProgressString(stepIndex, totalSteps, repeatIndex, repeatTotal) {
+  if (window.isMuxMode()) {
+    index = stepIndex;
+    total = totalSteps;
+    suffix = "step(s)";
+  } else if (window.isMotorMode()) {
+    index = repeatIndex;
+    total = repeatTotal;
+    suffix = "repeat(s)";
+  }
+
+  return `${index}/${total} ${suffix}`;
+}
+
 function SSEHandler(d) {
   try {
     // Extract data from SSE payload
     const ch = d.current_channel ?? 0;
-    const rep = d.repeat_index ?? d.repeat ?? 0;
+    const repeatIndex = d.repeat_index ?? d.repeat ?? 0;
     const pct = d.percent ?? 0;
     const overallPct = d.overall_percent ?? 0;
     const newPhase = d.phase ?? window.PHASE.IDLE;
@@ -281,9 +295,11 @@ function SSEHandler(d) {
 
       // Show completion/abort notifications
       if (window.taskAborted(newPhase)) {
-        window.showMeasurementSummaryToast?.("Measurement Aborted", stepIndex, totalSteps, "danger");
+        let progressStr = getProgressString(stepIndex, totalSteps, repeatIndex, repeatTotal);
+        window.showMeasurementSummaryToast?.("Measurement Aborted", progressStr, "danger");
       } else if (window.taskCompleted(currentPhase, newPhase)) {
-        window.showMeasurementSummaryToast?.("Measurement Complete", totalSteps, totalSteps, "success");
+        let progressStr = getProgressString(stepIndex, totalSteps, repeatIndex, repeatTotal);
+        window.showMeasurementSummaryToast?.("Measurement Complete", progressStr, "success");
       }
 
       currentPhase = newPhase;
@@ -295,7 +311,7 @@ function SSEHandler(d) {
 
     // console.log(`[SSE] Phase: ${newPhase}, Channel: ${ch}, Repeat: ${rep}, Percent: ${pct}% step ${stepIndex}/${enabledCount}`);
     // Update progress circles on every SSE event (idempotent)
-    window.updateRepeatInfo?.(rep, repeatTotal);
+    window.updateRepeatInfo?.(repeatIndex, repeatTotal);
     window.updateCycleProgress?.(pct, stepIndex, enabledCount);
     window.updateCircularProgress?.(overallPct);
 

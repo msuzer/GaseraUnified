@@ -19,9 +19,9 @@ function showAlert(message, type = "info") {
 // ============================================================
 // Measurement Summary Toast
 // ============================================================
-function showMeasurementSummaryToast(title, completedSteps, totalSteps, type) {
+function showMeasurementSummaryToast(title, progressStr, type) {
   const formattedTime = window.getMeasurementTiming?.();
-  const summary = `<strong>${title}</strong><br>Completed: ${completedSteps}/${totalSteps} steps<br>Duration: ${formattedTime}`;
+  const summary = `<strong>${title}</strong><br>Progress: ${progressStr}<br>Duration: ${formattedTime}`;
   window.showToast({
     message: summary,
     variant: type,
