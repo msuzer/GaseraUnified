@@ -1,58 +1,40 @@
 /* =========================================================
-   Shared Design Variables (used later by jars too)
-========================================================= */
-/* =========================================================
-   Semantic State Colors (aligned with jars)
+   Semantic + Material Variables (single source of truth)
 ========================================================= */
 :root {
+  /* semantic (aligned with jars) */
   --state-ready: #4c6ef5;
-  /* same as jar ready/armed */
   --state-active: #2ecc71;
-  /* measuring */
   --state-paused: #f1c40f;
-  /* paused */
   --state-abort: #e74c3c;
-  /* aborted */
   --state-disabled: #cfd4da;
-  /* inactive */
-}
 
-:root {
-  --measure-green: #2ecc71;
-  --pause-amber: #f1c40f;
-  --abort-red: #e74c3c;
-
+  /* materials */
   --metal-light: #e5e7eb;
   --metal-mid: #cfd4da;
   --metal-dark: #9aa0a6;
 
   --ground-dark: #6b5e4b;
   --ground-light: #8a7a63;
-}
 
-:root {
+  /* flow */
   --flow-speed-measure: 0.9s;
   --flow-speed-pause: 2.5s;
-
-  --flow-opacity-strong: 0.85;
-  --flow-opacity-soft: 0.45;
 }
 
 /* =========================================================
-   Rover Scene Container
+   Rover Scene
 ========================================================= */
 .rover-scene {
   position: relative;
   height: 250px;
   max-width: 700px;
   margin: 0 auto;
-  padding-top: 10px;
-  padding-bottom: 16px;
-  /* only breathing room */
+  padding: 10px 0 16px;
 }
 
 /* =========================================================
-   Gasera Unit
+   Gasera
 ========================================================= */
 .gasera-unit {
   position: absolute;
@@ -64,14 +46,14 @@
 .gasera-body {
   width: 140px;
   height: 48px;
+  line-height: 48px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #333;
   background: linear-gradient(to bottom, var(--metal-light), var(--metal-mid));
   border-radius: 6px;
   border: 1px solid var(--metal-dark);
-  text-align: center;
-  line-height: 48px;
-  font-weight: 600;
-  font-size: 0.75rem;
-  color: #333;
 }
 
 /* =========================================================
@@ -98,27 +80,40 @@
 }
 
 /* =========================================================
-   Arms Container
+   Arms Container (attached to rover bottom)
 ========================================================= */
 .rover-arms {
   position: absolute;
   top: 50px;
-  /* aligns arm tops to rover bottom */
   left: 50%;
   transform: translateX(-50%);
   width: 520px;
-  /* controlled span instead of full width */
   display: flex;
   justify-content: space-between;
 }
 
 /* =========================================================
-   Individual Arm
+   Arm Base
 ========================================================= */
 .arm {
   position: relative;
   width: 120px;
   text-align: center;
+
+  opacity: 0.25;
+  filter: grayscale(0.8);
+  pointer-events: none;
+}
+
+.arm.enabled {
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+}
+
+.arm.disabled {
+  opacity: 0.15;
+  filter: grayscale(1);
 }
 
 .arm-label {
@@ -128,29 +123,25 @@
   color: var(--state-disabled);
 }
 
-/* Enabled arm */
 .arm.enabled .arm-label {
   color: var(--state-ready);
   font-weight: 600;
 }
 
-/* Measuring */
 #motor-rover-card.phase-measuring .arm.active .arm-label {
   color: var(--state-active);
 }
 
-/* Paused */
 #motor-rover-card.phase-paused .arm.active .arm-label {
   color: var(--state-paused);
 }
 
-/* Aborted */
 #motor-rover-card.phase-aborted .arm-label {
   color: var(--state-abort);
 }
 
 /* =========================================================
-   Visual arm-to-rover connection
+   Arm → Rover Connector
 ========================================================= */
 .arm::before {
   content: "";
@@ -197,7 +188,6 @@
 }
 
 .chamber-body {
-  position: relative;
   width: 100%;
   height: 100%;
   background: linear-gradient(to bottom, #555, #3a3a3a);
@@ -206,7 +196,7 @@
 }
 
 /* =========================================================
-   Seal Ring – default hidden
+   Seal Ring (visibility controlled by phase)
 ========================================================= */
 .seal-ring {
   position: absolute;
@@ -222,6 +212,22 @@
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
+/* visible only in switching / measuring / paused */
+#motor-rover-card.phase-switching .arm.active .seal-ring,
+#motor-rover-card.phase-measuring .arm.active .seal-ring,
+#motor-rover-card.phase-paused .arm.active .seal-ring {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+/* sealed (color + compression) */
+.arm.sealed .seal-ring {
+  height: 8px;
+  background: var(--state-active);
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.9);
+  transform: scaleX(1.15);
+}
+
 /* =========================================================
    Ground
 ========================================================= */
@@ -235,9 +241,6 @@
   border-top: 2px solid #4a4033;
 }
 
-/* =========================================================
-   Ground reaction on seal
-========================================================= */
 #motor-rover-card.phase-measuring .arm.active~.ground-line,
 #motor-rover-card.phase-paused .arm.active~.ground-line {
   box-shadow:
@@ -254,43 +257,7 @@
 }
 
 /* =========================================================
-   Phase Hooks (NO animation yet)
-========================================================= */
-
-/* Generic phase markers */
-#motor-rover-card.phase-idle {}
-
-#motor-rover-card.phase-armed {}
-
-#motor-rover-card.phase-switching {}
-
-#motor-rover-card.phase-measuring {}
-
-#motor-rover-card.phase-paused {}
-
-#motor-rover-card.phase-homing {}
-
-#motor-rover-card.phase-aborted {}
-
-/* Active arm marker */
-.arm.active .arm-label {
-  color: #000;
-  font-weight: 600;
-}
-
-/* Sealed contact (visual only for now) */
-.arm.sealed .seal-ring {
-  background: var(--measure-green);
-}
-
-/* Aborted */
-#motor-rover-card.phase-aborted .chamber-body,
-#motor-rover-card.phase-aborted .actuator {
-  background: #5a2b2b;
-}
-
-/* =========================================================
-   Vertical Flow Base (OFF by default)
+   Vertical Flow (single implementation)
 ========================================================= */
 .flow-vertical {
   position: relative;
@@ -301,109 +268,60 @@
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to top,
-      transparent 0%,
-      rgba(46, 204, 113, var(--flow-opacity-strong)) 50%,
-      rgba(46, 204, 113, 0.0) 80%,
-      transparent 100%);
   background-size: 100% 200%;
   background-position-y: 100%;
   opacity: 0;
 }
 
-/* =========================================================
-   MEASURING
-========================================================= */
-#motor-rover-card.phase-measuring .arm.active .seal-ring,
-#motor-rover-card.phase-measuring .arm.active .chamber-body,
-#motor-rover-card.phase-measuring .arm.active .actuator-inner {
-  background-color: inherit;
-}
-
-#motor-rover-card.phase-measuring .arm.active .seal-ring,
-#motor-rover-card.phase-measuring .arm.active .chamber-body,
-#motor-rover-card.phase-measuring .arm.active .actuator-inner {
-  position: relative;
-  overflow: hidden;
-}
-
-#motor-rover-card.phase-measuring .arm.active .seal-ring::before,
-#motor-rover-card.phase-measuring .arm.active .chamber-body::before,
-#motor-rover-card.phase-measuring .arm.active .actuator-inner::before {
+/* measuring */
+#motor-rover-card.phase-measuring .arm.active .flow-vertical::before {
+  background:
+    linear-gradient(to top,
+      transparent 15%,
+      rgba(46, 204, 113, 1) 45%,
+      rgba(46, 204, 113, 1) 55%,
+      transparent 85%);
   opacity: 1;
   animation: flow-up var(--flow-speed-measure) linear infinite;
 }
 
-/* =========================================================
-   PAUSED
-========================================================= */
-#motor-rover-card.phase-paused .arm.active .seal-ring::before,
-#motor-rover-card.phase-paused .arm.active .chamber-body::before,
-#motor-rover-card.phase-paused .arm.active .actuator-inner::before {
+/* paused */
+#motor-rover-card.phase-paused .arm.active .flow-vertical::before {
   background:
     linear-gradient(to top,
-      transparent 0%,
-      rgba(241, 196, 15, 0.0) 20%,
+      transparent 20%,
       rgba(241, 196, 15, 0.9) 50%,
-      rgba(241, 196, 15, 0.0) 80%,
-      transparent 100%);
+      transparent 80%);
   opacity: 1;
   animation: flow-up var(--flow-speed-pause) linear infinite;
 }
 
-/* =========================================================
-   SWITCHING (single flash)
-========================================================= */
-#motor-rover-card.phase-switching .arm.active .seal-ring::before {
+/* switching (single pulse) */
+#motor-rover-card.phase-switching .arm.active .flow-vertical::before {
+  background:
+    linear-gradient(to top,
+      transparent,
+      rgba(46, 204, 113, 0.9),
+      transparent);
   opacity: 1;
   animation: flow-once 0.6s ease-out 1;
 }
 
 /* =========================================================
-   HOMING
+   Gasera Pulse
 ========================================================= */
-#motor-rover-card.phase-homing .arm.active .seal-ring::before,
-#motor-rover-card.phase-homing .arm.active .chamber-body::before,
-#motor-rover-card.phase-homing .arm.active .actuator-inner::before {
-  opacity: 0.3;
-  animation: none;
+#motor-rover-card.phase-measuring .gasera-body {
+  box-shadow: 0 0 16px var(--state-active);
+  animation: gasera-pulse 1.2s ease-in-out infinite;
 }
 
-/* =========================================================
-   ABORTED
-========================================================= */
-#motor-rover-card.phase-aborted .seal-ring::before,
-#motor-rover-card.phase-aborted .chamber-body::before,
-#motor-rover-card.phase-aborted .actuator-inner::before {
-  background:
-    linear-gradient(to top,
-      transparent,
-      rgba(231, 76, 60, 0.8),
-      transparent);
-  opacity: 1;
-  animation: none;
+#motor-rover-card.phase-paused .gasera-body {
+  box-shadow: 0 0 14px var(--state-paused);
+  animation: gasera-pulse 2.5s ease-in-out infinite;
 }
 
-/* =========================================================
-   Actuator state tint (subtle)
-========================================================= */
-#motor-rover-card.phase-measuring .arm.active .actuator-inner {
-  background: linear-gradient(to bottom,
-      #eafff3,
-      var(--state-active));
-}
-
-#motor-rover-card.phase-paused .arm.active .actuator-inner {
-  background: linear-gradient(to bottom,
-      #fff6dc,
-      var(--state-paused));
-}
-
-#motor-rover-card.phase-aborted .actuator-inner {
-  background: linear-gradient(to bottom,
-      #ffd6d6,
-      var(--state-abort));
+#motor-rover-card.phase-aborted .gasera-body {
+  box-shadow: 0 0 14px var(--state-abort);
 }
 
 /* =========================================================
@@ -425,86 +343,6 @@
   box-shadow:
     inset 0 0 0 2px var(--state-abort);
 }
-
-
-/* =========================================================
-   Gasera Pulse (synced to measuring)
-========================================================= */
-#motor-rover-card.phase-measuring .gasera-body {
-  box-shadow: 0 0 14px rgba(46, 204, 113, 0.8);
-  animation: gasera-pulse 1.2s ease-in-out infinite;
-}
-
-#motor-rover-card.phase-paused .gasera-body {
-  box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
-  animation: gasera-pulse 2.5s ease-in-out infinite;
-}
-
-.arm.sealed .seal-ring {
-  height: 8px;
-  background: var(--measure-green);
-  box-shadow: 0 0 12px rgba(46, 204, 113, 0.9);
-  transform: scaleX(1.15);
-}
-
-#motor-rover-card.phase-measuring .gasera-body {
-  box-shadow: 0 0 16px var(--state-active);
-}
-
-#motor-rover-card.phase-paused .gasera-body {
-  box-shadow: 0 0 14px var(--state-paused);
-}
-
-#motor-rover-card.phase-aborted .gasera-body {
-  box-shadow: 0 0 14px var(--state-abort);
-}
-
-/* =========================================================
-   Seal visibility by phase
-========================================================= */
-
-/* Visible during switching, measuring, paused */
-#motor-rover-card.phase-switching .arm.active .seal-ring,
-#motor-rover-card.phase-measuring .arm.active .seal-ring,
-#motor-rover-card.phase-paused .arm.active .seal-ring {
-  opacity: 1;
-  transform: scaleX(1);
-}
-
-/* Explicitly hidden elsewhere */
-#motor-rover-card.phase-idle .seal-ring,
-#motor-rover-card.phase-armed .seal-ring,
-#motor-rover-card.phase-homing .seal-ring,
-#motor-rover-card.phase-aborted .seal-ring {
-  opacity: 0;
-  transform: scaleX(0.6);
-}
-
-/* Inactive arms fade back */
-/* =========================================================
-   Arm enabled / disabled states (authoritative)
-========================================================= */
-
-/* Default: disabled */
-#motor-rover-card .arm {
-  opacity: 0.25;
-  filter: grayscale(0.8);
-  pointer-events: none;
-}
-
-/* Enabled arm */
-#motor-rover-card .arm.enabled {
-  opacity: 1;
-  filter: none;
-  pointer-events: auto;
-}
-
-/* Explicit disabled (used for abort/finish) */
-#motor-rover-card .arm.disabled {
-  opacity: 0.15;
-  filter: grayscale(1);
-}
-
 
 /* =========================================================
    Keyframes
@@ -538,16 +376,13 @@
 @keyframes gasera-pulse {
   0% {
     transform: scale(1);
-    box-shadow: 0 0 8px currentColor;
   }
 
   50% {
     transform: scale(1.04);
-    box-shadow: 0 0 20px currentColor;
   }
 
   100% {
     transform: scale(1);
-    box-shadow: 0 0 8px currentColor;
   }
 }
