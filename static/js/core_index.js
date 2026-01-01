@@ -27,6 +27,7 @@ window.hideElement = function (id) {
 window.switchToMotorMode = function () {
     window.UI_CAPS.motor = true;
     window.UI_CAPS.mux = false;
+    showElement("motor-rover-card");        // motor+rover
     showElement("motor-jog-card");          // actuator
     showElement("motor-timeout-block");     // actuator
     showElement("btnRepeat");               // actuator
@@ -39,6 +40,7 @@ window.switchToMotorMode = function () {
 window.switchToMuxMode = function () {
     window.UI_CAPS.motor = false;
     window.UI_CAPS.mux = true;
+    hideElement("motor-rover-card");
     hideElement("motor-jog-card");
     hideElement("motor-timeout-block");
     hideElement("btnRepeat");
@@ -383,6 +385,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     startGaseraSSE();
     queryAppProfile();
+    
+    if (typeof window.initMotorVisual === "function") {
+        window.initMotorVisual();
+    }
     // console.log("[core_index] SSE started");
 });
 

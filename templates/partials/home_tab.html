@@ -110,8 +110,10 @@
                 <div class="col-12">
                     <div class="d-flex justify-content-center flex-wrap gap-3 mt-2 pt-2 border-top">
                         <button type="button" id="btnStart" class="btn btn-success btn-lg px-5">Start</button>
-                        <button type="button" id="btnRepeat" class="btn btn-outline-primary btn-lg px-5 d-none">Repeat</button>
-                        <button type="button" id="btnFinish" class="btn btn-outline-secondary btn-lg px-5 d-none">Finish</button>
+                        <button type="button" id="btnRepeat"
+                            class="btn btn-outline-primary btn-lg px-5 d-none">Repeat</button>
+                        <button type="button" id="btnFinish"
+                            class="btn btn-outline-secondary btn-lg px-5 d-none">Finish</button>
                         <button type="button" id="btnAbort" class="btn btn-danger btn-lg px-5" disabled>Abort</button>
                     </div>
                 </div>
@@ -139,5 +141,95 @@
         </div>
 
     </div>
+
+    <!-- =========================================================
+     Motor Profile – Rover Visualization Card
+     Visible ONLY in motor profile
+========================================================== -->
+
+    <div id="motor-rover-card" class="card shadow-sm mb-3 d-none">
+
+        <div class="card-header py-2">
+            <span class="small fw-semibold text-muted">
+                Rover & Ground Sampling System
+            </span>
+        </div>
+
+        <div class="card-body">
+
+            <!-- ===== Rover Scene Container ===== -->
+            <div class="rover-scene">
+
+                <!-- ================= Gasera ================= -->
+                <div class="gasera-unit" id="gaseraUnit">
+                    <div class="gasera-body">
+                        <div class="gasera-label">GASERA</div>
+                    </div>
+                </div>
+
+                <!-- ================= Rover Body ================= -->
+                <div class="rover-body">
+                    <div class="rover-label">ROVER</div>
+                </div>
+
+                <!-- ================= Arms ================= -->
+                <div class="rover-arms">
+
+                    <!-- -------- Left Arm -------- -->
+                    <div class="arm arm-left" data-arm="0">
+
+                        <div class="arm-label">LEFT ARM</div>
+
+                        <!-- Actuator -->
+                        <div class="actuator">
+                            <div class="actuator-inner"></div>
+                        </div>
+
+                        <!-- Chamber -->
+                        <div class="chamber">
+                            <div class="chamber-body">
+
+                                <!-- Seal (ground contact indicator) -->
+                                <div class="seal-ring"></div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- -------- Right Arm -------- -->
+                    <div class="arm arm-right" data-arm="1">
+
+                        <div class="arm-label">RIGHT ARM</div>
+
+                        <!-- Actuator -->
+                        <div class="actuator">
+                            <div class="actuator-inner"></div>
+                        </div>
+
+                        <!-- Chamber -->
+                        <div class="chamber">
+                            <div class="chamber-body">
+
+                                <!-- Seal (ground contact indicator) -->
+                                <div class="seal-ring"></div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div> <!-- /rover-arms -->
+
+                <!-- ================= Ground ================= -->
+                <div class="ground-line">
+                    <div class="ground-label">GROUND</div>
+                </div>
+
+            </div> <!-- /rover-scene -->
+
+        </div>
+    </div>
+
 
 </div>
