@@ -1,9 +1,11 @@
 {
   "measurement_duration": 300,
   "pause_seconds": 300,
+  "motor_timeout": 60,
   "repeat_count": 1,
   "buzzer_enabled": true,
   "simulator_enabled": false,
+  "online_mode_enabled": true,
   "include_channels": [
     1,
     1,
