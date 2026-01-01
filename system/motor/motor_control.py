@@ -1,5 +1,6 @@
 import time
 from threading import Thread, RLock
+from typing import Optional
 from system import services
 from system.preferences import KEY_MOTOR_TIMEOUT
 from system.motor.bank import MotorBank
@@ -15,7 +16,7 @@ class MotorController:
             "1": {"status": "idle", "direction": None}
         }
         self._lock = {"0": RLock(), "1": RLock()}
-        self._threads = {}
+        self._threads: dict[str, Thread] = {}
 
     def set_timeout(self, seconds):
         self.timeout_sec = int(seconds or DEFAULT_MOTOR_TIMEOUT)
@@ -23,7 +24,7 @@ class MotorController:
     def get_timeout(self):
         return self.timeout_sec
 
-    def start(self, motor_id: str, direction: str):
+    def start(self, motor_id: str, direction: str, enable_timeout: bool = True):
         lock = self._lock[motor_id]
         with lock:
             if self._state[motor_id]["status"] == "moving":
@@ -39,6 +40,9 @@ class MotorController:
             print(f"[MOTOR] Started motor {motor_id} {direction.upper()}")
 
             if motor_id in self._threads and self._threads[motor_id].is_alive():
+                return
+            
+            if enable_timeout is False:
                 return
             
             t = Thread(target=self._monitor, args=(motor_id, direction), daemon=True)

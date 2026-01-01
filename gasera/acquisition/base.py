@@ -340,7 +340,8 @@ class BaseAcquisitionEngine(ABC):
 
         self.motion.step(unit_id)
         ok = self._blocking_wait(duration=self.cfg.motion_timeout, notify=True)
-        self.motion.reset(unit_id)
+        # do not reset here to allow solneoid valve to stay active
+        # self.motion.reset(unit_id)
 
         return ok
 
@@ -349,9 +350,10 @@ class BaseAcquisitionEngine(ABC):
 
         services.buzzer.play("home")
 
+        self.motion.reset(unit_id) # reset both motor and solenoid valve before homing
         self.motion.home(unit_id)
         ok = self._blocking_wait(duration=self.cfg.motion_timeout, notify=True)
-        self.motion.reset(unit_id)
+        self.motion.reset(unit_id) # reset in case timeout failure
 
         return ok
 

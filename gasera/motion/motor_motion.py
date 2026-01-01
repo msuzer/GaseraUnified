@@ -12,7 +12,7 @@ class MotorMotion:
         
         # prefer motor controller service if available
         if mc is not None:
-            mc.start(unit_id, "ccw")
+            mc.start(unit_id, "ccw", enable_timeout=True)
         else:
             self.motors.get(unit_id).move_backward()
 
@@ -21,7 +21,7 @@ class MotorMotion:
         
         # prefer motor controller service if available
         if mc is not None:
-            mc.start(unit_id, "cw")
+            mc.start(unit_id, "cw", enable_timeout=False)
         else:
             self.motors.get(unit_id).move_forward()
     
