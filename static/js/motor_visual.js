@@ -101,5 +101,5 @@ window.initMotorVisual = function initMotorVisual() {
         applyMotorVisualState(d);
     });
 
-    console.log("[motor_visual] initialized");
+    // console.log("[motor_visual] initialized");
 };

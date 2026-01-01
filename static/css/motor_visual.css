@@ -20,6 +20,8 @@
   /* flow */
   --flow-speed-measure: 0.9s;
   --flow-speed-pause: 2.5s;
+
+  --rover-scale: 1.0; /* try 1.1 – 1.4 */
 }
 
 /* =========================================================
@@ -27,56 +29,151 @@
 ========================================================= */
 .rover-scene {
   position: relative;
-  height: 250px;
   max-width: 700px;
   margin: 0 auto;
   padding: 10px 0 16px;
 }
 
 /* =========================================================
-   Gasera
+   Rover Scene Spacer (correct, minimal)
 ========================================================= */
-.gasera-unit {
+.rover-scene-spacer {
+  height: 260px;
+}
+
+/* =========================================================
+   Rover Core (head + mast + body)
+========================================================= */
+
+.rover-core {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) scale(var(--rover-scale));
+  transform-origin: top center;
+  width: 200px;
+  height: 140px;
+  pointer-events: none;
+}
+
+
+/* ---------- Head ---------- */
+.rover-head {
   position: absolute;
   top: 0;
   left: 50%;
+  width: 64px;
+  height: 40px;
   transform: translateX(-50%);
-}
-
-.gasera-body {
-  width: 140px;
-  height: 48px;
-  line-height: 48px;
-  text-align: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #333;
   background: linear-gradient(to bottom, var(--metal-light), var(--metal-mid));
   border-radius: 6px;
   border: 1px solid var(--metal-dark);
 }
 
-/* =========================================================
-   Rover Body
-========================================================= */
-.rover-body {
+.camera-eye {
   position: absolute;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 300px;
-  height: 60px;
-  background: linear-gradient(to bottom, #444, #2f2f2f);
-  border-radius: 8px;
-  border: 1px solid #222;
-  text-align: center;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  background: #111;
+  border-radius: 50%;
 }
 
-.rover-label {
-  line-height: 60px;
-  font-size: 0.8rem;
-  color: #eaeaea;
-  letter-spacing: 1px;
+.camera-eye::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  background: #00c3ff;
+  border-radius: 50%;
+}
+
+#motor-rover-card.phase-measuring .camera-eye::after {
+  box-shadow: 0 0 12px var(--state-active);
+}
+
+#motor-rover-card.phase-paused .camera-eye::after {
+  box-shadow: 0 0 10px var(--state-paused);
+}
+
+#motor-rover-card.phase-aborted .camera-eye::after {
+  box-shadow: 0 0 10px var(--state-abort);
+}
+
+/* ---------- Mast ---------- */
+.rover-mast {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  width: 8px;
+  height: 32px;
+  transform: translateX(-50%);
+  background: #f4d35e;
+  border-radius: 4px;
+}
+
+/* ---------- Body ---------- */
+.rover-body {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  width: 200px;        /* wider */
+  height: 50px;        /* taller */
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, #f1f3f5, #dee2e6);
+  border-radius: 14px;
+  border: 1px solid var(--metal-dark);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding-top: 0;
+}
+
+.vent {
+  width: 14px;
+  height: 16px;
+  background: #ffd166; /* idle yellow */
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+/* =========================================================
+   Rover body activity indicators
+========================================================= */
+
+/* Measuring: flowing R → Y → G */
+#motor-rover-card.phase-measuring .vent {
+  animation: vent-measure 1.4s ease-in-out infinite;
+}
+
+/* Phase offset for sweep effect */
+#motor-rover-card.phase-measuring .vent:nth-child(1) { animation-delay: 0s; }
+#motor-rover-card.phase-measuring .vent:nth-child(2) { animation-delay: 0.25s; }
+#motor-rover-card.phase-measuring .vent:nth-child(3) { animation-delay: 0.50s; }
+#motor-rover-card.phase-measuring .vent:nth-child(4) { animation-delay: 0.75s; }
+
+@keyframes vent-measure {
+  0%   { background: #e74c3c; } /* red */
+  33%  { background: #f1c40f; } /* yellow */
+  66%  { background: #2ecc71; } /* green */
+  100% { background: #f1c40f; } /* yellow */
+}
+
+#motor-rover-card.phase-paused .vent {
+  background: #f1c40f;
+  animation: vent-paused 2.5s ease-in-out infinite;
+}
+
+@keyframes vent-paused {
+  0%   { opacity: 0.5; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+#motor-rover-card.phase-aborted .vent {
+  background: #e74c3c;
+  animation: none;
 }
 
 /* =========================================================
@@ -84,10 +181,10 @@
 ========================================================= */
 .rover-arms {
   position: absolute;
-  top: 50px;
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
-  width: 520px;
+  width: 440px;
   display: flex;
   justify-content: space-between;
 }
@@ -109,6 +206,31 @@
   opacity: 1;
   filter: none;
   pointer-events: auto;
+}
+
+/* =========================================================
+   Arm visibility by phase
+========================================================= */
+
+/* IDLE → greyed out */
+#motor-rover-card.phase-idle .arm {
+  opacity: 0.25;
+  filter: grayscale(0.9);
+}
+
+/* ARMED → visible but not active */
+#motor-rover-card.phase-armed .arm {
+  opacity: 0.7;
+  filter: none;
+  pointer-events: auto;
+}
+
+/* Active phases keep JS-driven .enabled */
+#motor-rover-card.phase-switching .arm.enabled,
+#motor-rover-card.phase-measuring .arm.enabled,
+#motor-rover-card.phase-paused .arm.enabled {
+  opacity: 1;
+  filter: none;
 }
 
 .arm.disabled {
@@ -233,7 +355,7 @@
 ========================================================= */
 .ground-line {
   position: absolute;
-  top: 220px;
+  top: 250px;
   left: 0;
   right: 0;
   height: 12px;
@@ -305,23 +427,6 @@
       transparent);
   opacity: 1;
   animation: flow-once 0.6s ease-out 1;
-}
-
-/* =========================================================
-   Gasera Pulse
-========================================================= */
-#motor-rover-card.phase-measuring .gasera-body {
-  box-shadow: 0 0 16px var(--state-active);
-  animation: gasera-pulse 1.2s ease-in-out infinite;
-}
-
-#motor-rover-card.phase-paused .gasera-body {
-  box-shadow: 0 0 14px var(--state-paused);
-  animation: gasera-pulse 2.5s ease-in-out infinite;
-}
-
-#motor-rover-card.phase-aborted .gasera-body {
-  box-shadow: 0 0 14px var(--state-abort);
 }
 
 /* =========================================================
