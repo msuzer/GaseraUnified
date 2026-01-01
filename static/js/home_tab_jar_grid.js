@@ -13,51 +13,91 @@ const ChannelState = {
   SAMPLED: 2
 };
 
-// ============================================================
-// Jar Grid Creation
-// ============================================================
-(function createJarGrid() {
-  for (let i = 1; i <= TOTAL_JARS; i++) {
-    const jar = document.createElement("div");
-    jar.className = "jar";
-    jar.dataset.id = i;
-    jar.innerHTML = `
+window.enableJar = function (jar) {
+  if (window.isMeasurementRunning) return;
+
+  if (!jar.classList.contains("active")) {
+    jar.classList.add("active");
+    if (jar.dataset.wasSampled === "true") {
+      jar.classList.add("sampled");
+      jar.dataset.wasSampled = "false";
+    }
+  }
+
+  if (jar.classList.contains("sampling")) {
+    jar.classList.remove("sampling");
+  }
+};
+
+window.disableJar = function (jar) {
+  if (window.isMeasurementRunning) return;
+
+  if (jar.classList.contains("active")) {
+    jar.classList.remove("active");
+    if (jar.classList.contains("sampled")) {
+      jar.classList.remove("sampled");
+      jar.dataset.wasSampled = "true";
+    }
+  }
+
+  if (jar.classList.contains("sampling")) {
+    jar.classList.remove("sampling");
+  }
+};
+
+window.toggleJarState = function (jar) {
+  if (window.isMeasurementRunning) return;
+
+  if (jar.classList.contains("active")) {
+    jar.classList.remove("active");
+    if (jar.classList.contains("sampled")) {
+      jar.classList.remove("sampled");
+      jar.dataset.wasSampled = "true";
+    }
+  } else {
+    jar.classList.add("active");
+    if (jar.dataset.wasSampled === "true") {
+      jar.classList.add("sampled");
+      jar.dataset.wasSampled = "false";
+    }
+  }
+
+  if (jar.classList.contains("sampling")) {
+    jar.classList.remove("sampling");
+  }
+};
+
+  // ============================================================
+  // Jar Grid Creation
+  // ============================================================
+  (function createJarGrid() {
+    for (let i = 1; i <= TOTAL_JARS; i++) {
+      const jar = document.createElement("div");
+      jar.className = "jar";
+      jar.dataset.id = i;
+      jar.innerHTML = `
         <div class="jar-neck"></div>
         <div class="jar-body"></div>
         <span class="jar-label">${i}</span>`;
-    
-    jar.addEventListener("click", () => {
-      if (window.isMeasurementRunning) return;
-      
-      if (jar.classList.contains("active")) {
-        jar.classList.remove("active");
-        if (jar.classList.contains("sampled")) {
-          jar.classList.remove("sampled");
-          jar.dataset.wasSampled = "true";
-        }
-      } else {
-        jar.classList.add("active");
-        if (jar.dataset.wasSampled === "true") {
-          jar.classList.add("sampled");
-          jar.dataset.wasSampled = "false";
-        }
-      }
 
-      if (jar.classList.contains("sampling")) {
-        jar.classList.remove("sampling");
-      }
-    });
+      jar.addEventListener("click", () => {
+        window.toggleJarState(jar);
+      });
 
-    jarGrid.appendChild(jar);
-  }
-})();
+      jarGrid.appendChild(jar);
+    }
+  })();
 
 // ============================================================
 // Jar Selection Utilities
 // ============================================================
 window.setAllJars = function (state) {
   document.querySelectorAll(".jar").forEach(jar => {
-    jar.classList.toggle("active", state);
+    if (state) {
+      window.enableJar(jar);
+    } else {
+      window.disableJar(jar);
+    }
   });
 };
 
@@ -75,7 +115,7 @@ window.applyJarMask = function (mask = []) {
   jars.forEach((jar, i) => {
     const state = mask[i];
 
-    if (state === ChannelState.INACTIVE)  {
+    if (state === ChannelState.INACTIVE) {
       jar.classList.remove("active", "sampled");
     } else {
       jar.classList.add("active");
@@ -90,7 +130,7 @@ window.applyJarMask = function (mask = []) {
 
 window.invertJars = function () {
   document.querySelectorAll(".jar").forEach(jar => {
-    jar.classList.toggle("active");
+    window.toggleJarState(jar);
   });
 };
 
