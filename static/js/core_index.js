@@ -14,12 +14,12 @@ window.UI_CAPS = {
 window.isMotorMode = () => window.UI_CAPS?.motor === true;
 window.isMuxMode = () => window.UI_CAPS?.mux === true;
 
-function show(id) {
+window.showElement = function (id) {
     const el = document.getElementById(id);
     if (el) el.classList.remove("d-none");
 }
 
-function hide(id) {
+window.hideElement = function (id) {
     const el = document.getElementById(id);
     if (el) el.classList.add("d-none");
 }
@@ -27,25 +27,25 @@ function hide(id) {
 window.switchToMotorMode = function () {
     window.UI_CAPS.motor = true;
     window.UI_CAPS.mux = false;
-    show("motor-jog-card");          // actuator
-    show("motor-timeout-block");     // actuator
-    show("btnRepeat");               // actuator
-    show("btnFinish");               // actuator
+    showElement("motor-jog-card");          // actuator
+    showElement("motor-timeout-block");     // actuator
+    showElement("btnRepeat");               // actuator
+    showElement("btnFinish");               // actuator
 
-    hide("channel-selection-card");  // mux-only
-    hide("repeat-count-block");      // mux-only
+    hideElement("channel-selection-card");  // mux-only
+    hideElement("repeat-count-block");      // mux-only
 }
 
 window.switchToMuxMode = function () {
     window.UI_CAPS.motor = false;
     window.UI_CAPS.mux = true;
-    hide("motor-jog-card");
-    hide("motor-timeout-block");
-    hide("btnRepeat");
-    hide("btnFinish");
+    hideElement("motor-jog-card");
+    hideElement("motor-timeout-block");
+    hideElement("btnRepeat");
+    hideElement("btnFinish");
 
-    show("channel-selection-card");
-    show("repeat-count-block");
+    showElement("channel-selection-card");
+    showElement("repeat-count-block");
 }
 
 async function queryAppProfile() {

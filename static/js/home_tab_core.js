@@ -49,15 +49,23 @@ function applyPhase(phase) {
     // text will be refined by updateButtonText()
   }
 
-  // REPEAT and FINISH buttons
+  // REPEAT and FINISH button
   if (window.isEngineArmed(phase)) {
+    window.showElement("btnRepeat");
     btnRepeat.disabled = false;
+    window.showElement("btnFinish");
     btnFinish.disabled = false;
+  } else {
+    window.hideElement("btnRepeat");
+    window.hideElement("btnFinish");
   }
 
   // ABORT button
-  if (window.isEngineArmed(phase) || window.isEngineActive(phase)) {
+  if (window.isEngineActive(phase)) {
+    window.showElement("btnAbort");
     btnAbort.disabled = false;
+  } else if (window.isEnginePassive(phase) || window.isEngineArmed(phase)) {
+    window.hideElement("btnAbort");
   }
 
   window.lockPreferenceInputs?.(!window.isEnginePassive(phase));
@@ -195,19 +203,29 @@ btnRepeat.onclick = async () => {
   }
 };
 
-btnFinish.onclick = async () => {
-  try {
-    const res = await safeFetch(API_PATHS?.measurement?.finish, {
-      method: "POST"
-    });
-    const j = await res.json();
-    if (!j.ok) {
-      window.showAlert?.("Finish failed", "danger");
+btnFinish.addEventListener("click", () => {
+  window.showConfirmModal({
+    title: "Confirm Finish",
+    message: "Finish current measurement? This will immediately stop Gasera operation.",
+    confirmText: "Yes, Finish",
+    confirmClass: "btn-warning",
+    headerClass: "bg-warning-subtle",
+    onConfirm: () => {
+      safeFetch(API_PATHS?.measurement?.finish, { method: "POST" })
+        .then(r => r.json())
+        .then(j => {
+          if (!j.ok) {
+            window.showAlert?.(j.message || "Failed to finish measurement", "warning");
+            console.warn("[MEAS] Finish error:", j.message);
+          }
+        })
+        .catch(e => {
+          window.showAlert?.("Finish error: " + (e.message || "Unknown error"), "danger");
+          console.warn("[MEAS] Finish failed:", e);
+        });
     }
-  } catch (e) {
-    window.showAlert?.("Finish error", "danger");
-  }
-};
+  });
+});
 
 btnAbort.addEventListener("click", () => {
   window.showConfirmModal({
@@ -215,7 +233,7 @@ btnAbort.addEventListener("click", () => {
     message: "Abort current measurement? This will immediately stop Gasera operation.",
     confirmText: "Yes, Abort",
     confirmClass: "btn-danger",
-    headerClass: "bg-warning-subtle",
+    headerClass: "bg-danger-subtle",
     onConfirm: () => {
       safeFetch(API_PATHS?.measurement?.abort, { method: "POST" })
         .then(r => r.json())
@@ -238,7 +256,6 @@ btnAbort.addEventListener("click", () => {
 // ============================================================
 let currentChannel = -1;
 let currentPhase = null;
-let currentDurationStr = "";
 
 function SSEHandler(d) {
   try {
@@ -263,18 +280,12 @@ function SSEHandler(d) {
 
     const channelChanged = currentChannel !== ch;
     const phaseChanged = currentPhase !== newPhase;
-    const durationChanged = currentDurationStr !== durationStr;
 
     if (channelChanged) {
       currentChannel = ch;
       if (phaseChanged && (ch === 0)) {
         window.resetJarStates?.();
       }
-    }
-
-    if (durationChanged) {
-      currentDurationStr = durationStr;
-      window.updateETTTDisplay?.();
     }
 
     if (phaseChanged) {
