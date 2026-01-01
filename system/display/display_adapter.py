@@ -28,11 +28,8 @@ class DisplayAdapter:
     def attach_engine(self, engine: AcquisitionEngine) -> None:
         self._engine = engine
         
-        engine.subscribe(self.from_progress)
-        
-        # TaskEvent channel is optional → guard it
-        if hasattr(engine, "subscribe_task_event"):
-            engine.subscribe_task_event(self.from_task_event)
+        engine.subscribe_progress_updates(self.from_progress)
+        engine.subscribe_task_events(self.from_task_event)
 
     def _refresh(self):
         """
@@ -138,10 +135,10 @@ class DisplayAdapter:
         if self._last_progress:
             pv = ProgressView(self._last_progress)
             if pv:
-                if pv.step_done_label:
-                    lines.append(pv.step_done_label)
+                if pv.progress_done_label:
+                    lines.append(f"Done: {pv.progress_done_label}")
                 if pv.duration_label:
-                    lines.append(pv.duration_label)
+                    lines.append(f"D: {pv.duration_label}")
 
         lines.append(f"T: {get_formatted_timestamp()}")
 
@@ -163,7 +160,7 @@ class DisplayAdapter:
             if pv.channel_step_label:
                 lines.append(pv.channel_step_label)
             if pv.duration_label:
-                lines.append(pv.duration_label)
+                lines.append(f"D: {pv.duration_label}")
         
         lines.append(f"IP: {get_ip_address()}")
 
@@ -180,7 +177,7 @@ class DisplayAdapter:
             if pv.channel_step_label:
                 lines.append(pv.channel_step_label)
             if pv.duration_label:
-                lines.append(pv.duration_label)
+                lines.append(f"D: {pv.duration_label}")
         
         lines.append(f"IP: {get_ip_address()}")
 

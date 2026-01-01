@@ -72,7 +72,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._task_cumulative_timer.reset()
         while not self._stop_event.is_set():
             self._set_phase(Phase.ARMED)
-            self._emit_task_event(TaskEvent.WAITING_FOR_TRIGGER)
+            self._emit_task_events(TaskEvent.WAITING_FOR_TRIGGER)
 
             self._armed_waiting_for_repeat = True
             self._repeat_event.wait()
@@ -97,7 +97,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._task_timer.reset() # per-cycle timer
         self._task_timer.start() # per-cycle timer
         self._task_cumulative_timer.start() # cumulative timer
-        self._emit_task_event(TaskEvent.CYCLE_STARTED)
+        self._emit_task_events(TaskEvent.CYCLE_STARTED)
         
         try:
             ok, msg = self._start_measurement()
@@ -112,7 +112,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 # UI channel mapping
                 self.progress.current_channel = idx
                 self.progress.next_channel = (idx + 1) if (idx + 1 < len(self.cfg.actuator_ids)) else None
-                self._emit_progress_event()
+                self._emit_progress_updates()
 
                 if not self._run_actuator_sequence(actuator_id):
                     self.motion.reset(actuator_id)
@@ -123,7 +123,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 pct = round((self.progress.step_index / float(self.progress.total_steps)) * 100)
                 self.progress.percent = pct
                 self.progress.overall_percent = pct # overall percent mirrors cycle percent
-                self._emit_progress_event()
+                self._emit_progress_updates()
 
             services.buzzer.play("completed")
 
@@ -134,11 +134,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             self._task_timer.pause()
             self._task_cumulative_timer.pause()
             self._cycle_in_progress = False
-            self._emit_progress_event()
+            self._emit_progress_updates()
             
             self.progress.repeat_index += 1
             self.progress.repeat_total += 1 # repeat_total mirrors repeat_index
-            self._emit_task_event(TaskEvent.CYCLE_FINISHED)
+            self._emit_task_events(TaskEvent.CYCLE_FINISHED)
             info(f"[ENGINE] Cycle complete. Step Index: {self.progress.step_index}, Total Steps: {self.progress.total_steps}")
 
         return True

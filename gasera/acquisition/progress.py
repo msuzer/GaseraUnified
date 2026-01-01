@@ -1,3 +1,4 @@
+from typing import Optional
 from gasera.acquisition.phase import Phase
 
 class Progress:
@@ -25,6 +26,8 @@ class Progress:
         self.total_steps = 0
         self.enabled_count = 0
         self.tt_seconds = None
+        self.duration_str: Optional[str] = None
+        self.progress_str: Optional[str] = None
 
     def to_dict(self) -> dict:
         return dict(self.__dict__)

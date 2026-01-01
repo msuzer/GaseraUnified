@@ -7,7 +7,7 @@ from typing import Dict, Any, Tuple
 
 from system.log_utils import warn, error
 from system import services
-from gasera.acquisition.base import Progress, Phase
+from gasera.acquisition.base import BaseAcquisitionEngine, Progress, Phase
 
 
 class LiveStatusService:
@@ -23,10 +23,10 @@ class LiveStatusService:
         self._updater_thread: threading.Thread | None = None
         self._engine = None
 
-    def attach_engine(self, engine) -> None:
+    def attach_engine(self, engine: BaseAcquisitionEngine) -> None:
         self._engine = engine
         try:
-            engine.subscribe(self._on_progress)
+            engine.subscribe_progress_updates(self._on_progress)
         except Exception:
             # subscribe may not be present on all engine implementations
             pass

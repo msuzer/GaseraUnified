@@ -64,21 +64,25 @@ class BaseAcquisitionEngine(ABC):
         self._last_notified_channel: int = -1
         self._task_timer = EngineTimer()     # measures task active time
 
-    def subscribe(self, cb: Callable[[Progress], None]) -> None:
+    def subscribe_progress_updates(self, cb: Callable[[Progress], None]) -> None:
         self._progress_subs.append(cb)
 
-    def subscribe_task_event(self, cb: Callable[[TaskEvent], None]) -> None:
+    def subscribe_task_events(self, cb: Callable[[TaskEvent], None]) -> None:
         self._task_event_subs.append(cb)
 
-    def _emit_progress_event(self):
+    def _emit_progress_updates(self):
         self.progress.elapsed_seconds = self._task_timer.elapsed()
+        from gasera.acquisition.progress_view import ProgressView
+        pv = ProgressView(self.progress)
+        self.progress.duration_str = pv.duration_label
+
         for cb in self._progress_subs:
             try:
                 cb(self.progress)
             except Exception:
                 pass
 
-    def _emit_task_event(self, event: TaskEvent):
+    def _emit_task_events(self, event: TaskEvent):
         for cb in self._task_event_subs:
             try:
                 cb(event)
@@ -206,15 +210,20 @@ class BaseAcquisitionEngine(ABC):
         finally:
             self._finalize_run()
 
+            from gasera.acquisition.progress_view import ProgressView
+            pv = ProgressView(self.progress)
+            self.progress.duration_str = pv.duration_label
+            self.progress.progress_str = pv.progress_done_label
+
             if self._stop_event.is_set():
                 self._stop_event.clear()
                 self._set_phase(Phase.ABORTED)
-                self._emit_task_event(TaskEvent.TASK_ABORTED)
+                self._emit_task_events(TaskEvent.TASK_ABORTED)
                 services.buzzer.play("cancel")
                 info("[ENGINE] Measurement run aborted by user")
             else:
                 self._set_phase(Phase.IDLE)
-                self._emit_task_event(TaskEvent.TASK_FINISHED)
+                self._emit_task_events(TaskEvent.TASK_FINISHED)
                 services.buzzer.play("completed")
                 info("[ENGINE] Measurement run complete")
 
@@ -303,7 +312,7 @@ class BaseAcquisitionEngine(ABC):
                 break
 
             if notify:
-                self._emit_progress_event()
+                self._emit_progress_updates()
 
             time.sleep(min(base_interval, remaining))
         return True
@@ -318,7 +327,7 @@ class BaseAcquisitionEngine(ABC):
 
         if changed:
             info(f"[ENGINE] phase -> {phase}")
-            self._emit_progress_event()
+            self._emit_progress_updates()
 
     # -----------------------------
     # Motion helpers

@@ -302,47 +302,13 @@ function heartbeatFooter() {
 // ---------------------------------------------------------------------
 let etttTimer = null;
 
-function formatDuration(seconds, fixed = false, ceil = false) {
-    if (!Number.isFinite(seconds) || seconds < 0) return "--:--";
-    const elapsed = ceil ? Math.ceil(seconds) : Math.floor(seconds);
-    const hours = Math.floor(elapsed / 3600);
-    const minutes = Math.floor((elapsed % 3600) / 60);
-    const secs = elapsed % 60;
-    if (fixed || hours > 0) {
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-// Expose globally for use in other modules
-window.formatDuration = formatDuration;
-
-function formatConsistentPair(etSeconds, ttSeconds) {
-    const et = Number.isFinite(etSeconds) && etSeconds >= 0 ? etSeconds : null;
-    const tt = Number.isFinite(ttSeconds) && ttSeconds >= 0 ? ttSeconds : null;
-    const showHours = (et || 0) >= 3600 || (tt || 0) >= 3600;
-    return [
-        et !== null ? formatDuration(et, showHours) : "--:--",
-        tt !== null ? formatDuration(tt, showHours) : "--:--"
-    ];
-}
-
-function getMeasurementTiming() {
-    const elapsed = window.latestElapsedSeconds || 0;
-    const total = window.latestTtSeconds || 0;
-    const [elapsedStr, totalStr] = formatConsistentPair(elapsed, total);
-    return `${elapsedStr} / ${totalStr}`;
-}
-
-// Expose globally for use in other modules
-window.getMeasurementTiming = getMeasurementTiming;
-
 function updateETTTDisplay() {
     // Lazy cache DOM elements
     if (!cachedDisplay) cachedDisplay = document.getElementById("etttDisplay");
     if (!cachedBtnStart) cachedBtnStart = document.getElementById("btnStart");
 
-    const formattedTime = getMeasurementTiming();
+    // const formattedTime = getMeasurementTiming();
+    const formattedTime = window.formattedDuration || "--:--/--:--";
 
     // Update footer display
     if (cachedDisplay) cachedDisplay.textContent = formattedTime;
@@ -351,7 +317,7 @@ function updateETTTDisplay() {
     if (cachedBtnStart) window.updateButtonText?.(cachedBtnStart, formattedTime);
 }
 
-function startETTTTimer(total) {
+function startETTTTimer() {
     stopETTTTimer();
 
     const timingDisplay = document.getElementById("timingDisplay");
@@ -396,11 +362,11 @@ if (window.GaseraHub) {
         }
 
         // ET/TT timer management - start on SWITCHING (includes homing) to stay in sync
-        const shouldStartTimer = window.isEngineActive(phase) && !etttTimer && d.tt_seconds;
+        const shouldStartTimer = window.isEngineActive(phase) && !etttTimer;
         const shouldStopTimer = !window.isEngineActive(phase) && (etttTimer || document.getElementById("timingDisplay")?.style.display !== "none");
 
         if (shouldStartTimer) {
-            startETTTTimer(d.tt_seconds);
+            startETTTTimer();
         } else if (shouldStopTimer) {
             stopETTTTimer();
         }

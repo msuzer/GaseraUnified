@@ -5,7 +5,6 @@ from typing import Optional
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
 from gasera.acquisition.progress import Progress
-from system import services
 from system.utils import format_duration, format_consistent_pair
 
 @dataclass(frozen=True)
@@ -43,7 +42,8 @@ class ProgressView:
             return None
 
     @property
-    def step_done_label(self) -> Optional[str]:
+    def progress_done_label(self) -> Optional[str]:
+        from system import services
         engine = services.engine_service
         progress_str: Optional[str] = None
         if engine:
@@ -55,7 +55,7 @@ class ProgressView:
         if progress_str is None:
             return None
 
-        return f"Done: {progress_str}"
+        return f"{progress_str}"
 
     @property
     def channel_step_label(self) -> Optional[str]:
@@ -66,7 +66,7 @@ class ProgressView:
         if step_str is None:
             return None
         
-        return f"Ch{self.p.current_channel + 1} Step {step_str}"
+        return f"Ch{self.p.current_channel + 1}, {step_str}"
 
     # -----------------------------
     # Duration
@@ -75,7 +75,7 @@ class ProgressView:
     def duration_label(self) -> Optional[str]:
         if self.p is None or self.p.elapsed_seconds is None:
             return None
-    
+
         has_total_duration = self.p.tt_seconds is not None and self.p.tt_seconds > 0
 
         elapsed = self.p.elapsed_seconds
@@ -83,10 +83,10 @@ class ProgressView:
         if has_total_duration:
             elapsed = min(elapsed, total) # cap to tt_seconds if known
             et_str, tt_str = format_consistent_pair(elapsed, total)
-            duration_str = f"D: {et_str}/{tt_str}"
+            duration_str = f"{et_str}/{tt_str}"
         else:
             et_str = format_duration(elapsed, fixed=True)
-            duration_str = f"D: {et_str}"
+            duration_str = f"{et_str}"
 
         return duration_str
 

@@ -60,7 +60,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         if not ok:
             return False, msg
 
-        self._emit_task_event(TaskEvent.TASK_STARTED)
+        self._emit_task_events(TaskEvent.TASK_STARTED)
 
         return True, "ok"
 

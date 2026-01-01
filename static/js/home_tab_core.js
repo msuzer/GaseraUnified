@@ -238,20 +238,7 @@ btnAbort.addEventListener("click", () => {
 // ============================================================
 let currentChannel = -1;
 let currentPhase = null;
-
-function getProgressString(stepIndex, totalSteps, repeatIndex, repeatTotal) {
-  if (window.isMuxMode()) {
-    index = stepIndex;
-    total = totalSteps;
-    suffix = "step(s)";
-  } else if (window.isMotorMode()) {
-    index = repeatIndex;
-    total = repeatTotal;
-    suffix = "repeat(s)";
-  }
-
-  return `${index}/${total} ${suffix}`;
-}
+let currentDurationStr = "";
 
 function SSEHandler(d) {
   try {
@@ -265,22 +252,29 @@ function SSEHandler(d) {
     const enabledCount = d.enabled_count ?? 0;
     const repeatTotal = d.repeat_total ?? 0;
     const totalSteps = d.total_steps ?? 0;
+    const progressStr = d.progress_str || "";
+    const durationStr = d.duration_str || "";
     const buzzer_enabled = window.DeviceStatus?.getBuzzerEnabled(d);
 
     // Store for timer/display updates
-    window.latestElapsedSeconds = d.elapsed_seconds ?? 0;
-    window.latestTtSeconds = d.tt_seconds ?? 0;
+    window.formattedDuration = durationStr;
     window.latestNextChannel = d.next_channel ?? 0;
     window.latestCurrentChannel = ch;
 
     const channelChanged = currentChannel !== ch;
     const phaseChanged = currentPhase !== newPhase;
+    const durationChanged = currentDurationStr !== durationStr;
 
     if (channelChanged) {
       currentChannel = ch;
       if (phaseChanged && (ch === 0)) {
         window.resetJarStates?.();
       }
+    }
+
+    if (durationChanged) {
+      currentDurationStr = durationStr;
+      window.updateETTTDisplay?.();
     }
 
     if (phaseChanged) {
@@ -295,11 +289,9 @@ function SSEHandler(d) {
 
       // Show completion/abort notifications
       if (window.taskAborted(newPhase)) {
-        let progressStr = getProgressString(stepIndex, totalSteps, repeatIndex, repeatTotal);
-        window.showMeasurementSummaryToast?.("Measurement Aborted", progressStr, "danger");
+        window.showMeasurementSummaryToast?.("Measurement Aborted", progressStr, durationStr, "danger");
       } else if (window.taskCompleted(currentPhase, newPhase)) {
-        let progressStr = getProgressString(stepIndex, totalSteps, repeatIndex, repeatTotal);
-        window.showMeasurementSummaryToast?.("Measurement Complete", progressStr, "success");
+        window.showMeasurementSummaryToast?.("Measurement Complete", progressStr, durationStr, "success");
       }
 
       currentPhase = newPhase;
