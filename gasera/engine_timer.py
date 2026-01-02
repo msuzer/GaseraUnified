@@ -29,11 +29,6 @@ class EngineTimer:
         self._accum = 0.0
         self._last_start = None
         
-    def overwrite(self, seconds: float) -> None:
-        self._accum = seconds
-        if self._running:
-            self._last_start = time.monotonic()
-
     def elapsed(self) -> float:
         if self._running:
             return self._accum + (time.monotonic() - self._last_start)

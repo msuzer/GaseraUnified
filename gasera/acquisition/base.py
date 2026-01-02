@@ -70,8 +70,12 @@ class BaseAcquisitionEngine(ABC):
     def subscribe_task_events(self, cb: Callable[[TaskEvent], None]) -> None:
         self._task_event_subs.append(cb)
 
+    def _get_elapsed_seconds(self) -> float:
+        """Return elapsed seconds for progress display."""
+        return self._task_timer.elapsed()
+
     def _emit_progress_updates(self):
-        self.progress.elapsed_seconds = self._task_timer.elapsed()
+        self.progress.elapsed_seconds = self._get_elapsed_seconds()
         from gasera.acquisition.progress_view import ProgressView
         pv = ProgressView(self.progress)
         self.progress.duration_str = pv.duration_label
@@ -170,6 +174,7 @@ class BaseAcquisitionEngine(ABC):
         )
 
         self.cfg = cfg
+        
         return True, "Configuration valid"
 
     # -----------------------------
@@ -197,6 +202,7 @@ class BaseAcquisitionEngine(ABC):
 
     def _finalize_run(self) -> None:
         # 1. Let subclass finalize its summary numbers
+        self._task_timer.pause()
         self._finalize_engine_specifics()
 
         # 2. Final progress formatting
@@ -238,6 +244,7 @@ class BaseAcquisitionEngine(ABC):
         )
 
         try:
+            self._task_timer.reset()
             self._run_loop()
         except Exception as e:
             error(f"[ENGINE] unhandled exception: {e}")

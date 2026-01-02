@@ -65,8 +65,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         return True, "ok"
 
     def _run_loop(self) -> None:
-        self._task_timer.reset()
-        self._task_timer.start()
+        self._task_timer.start() # mux starts timer at beginning of entire task
         for rep in range(self.cfg.repeat_count):
             if self._stop_event.is_set():
                 break
@@ -168,11 +167,4 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         return float(self.progress.total_steps) * per_channel + float(GASERA_CMD_SETTLE_TIME)
 
     def _finalize_engine_specifics(self) -> None:
-        self._task_timer.pause()
-        cap = float(self.progress.tt_seconds)
-        elapsed = self._task_timer.elapsed()
-        if elapsed > cap:
-            elapsed = cap
-
-        self._task_timer.overwrite(elapsed)
         info("[ENGINE] finalizing MUX measurement task")

@@ -27,8 +27,23 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         super().__init__(motion)
 
         self._cycle_in_progress = False
-        self._task_cumulative_timer = EngineTimer()
+        self._cycle_timer = EngineTimer()
         self._armed_waiting_for_repeat = False
+
+    def _get_elapsed_seconds(self) -> float:
+        phase = self.progress.phase
+
+        # Active cycle phases → show estimated cycle time
+        if phase in (
+            Phase.MEASURING,
+            Phase.PAUSED,
+            Phase.SWITCHING,
+            Phase.HOMING,
+        ):
+            return self._cycle_timer.elapsed()
+
+        # IDLE / ARMED / ABORTED → show cumulative task time
+        return self._task_timer.elapsed()
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
         super()._validate_and_load_config()
@@ -41,7 +56,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         self.progress.repeat_total = self.cfg.repeat_count # unbounded, increments after each cycle
         self.progress.total_steps = self.progress.enabled_count  # per-cycle, typically 2
-        self.progress.tt_seconds = self.estimate_total_time_seconds() # per-cycle estimate
+        self.progress.tt_seconds = self.estimate_total_time_seconds()
 
         return True, "Configuration valid"
 
@@ -69,7 +84,6 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.repeat_index = 0 # unbounded, increments after each cycle
         self.progress.repeat_total = 0 # repeat_total mirrors repeat_index
         
-        self._task_cumulative_timer.reset()
         while not self._stop_event.is_set():
             self._set_phase(Phase.ARMED)
             self._emit_task_events(TaskEvent.WAITING_FOR_TRIGGER)
@@ -94,9 +108,10 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.step_index = 0  # [0, enabled_count], increments per actuator
         self.progress.elapsed_seconds = 0.0
         
-        self._task_timer.reset() # per-cycle timer
-        self._task_timer.start() # per-cycle timer
-        self._task_cumulative_timer.start() # cumulative timer
+        # timers
+        self._cycle_timer.reset() # per-cycle timer
+        self._cycle_timer.start() # per-cycle timer
+        self._task_timer.start() # cumulative timer
         self._emit_task_events(TaskEvent.CYCLE_STARTED)
         
         try:
@@ -131,8 +146,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             if not self._stop_measurement():
                 warn("[ENGINE] Failed to stop Gasera after cycle completion")
 
+            self._cycle_timer.pause()
             self._task_timer.pause()
-            self._task_cumulative_timer.pause()
+
             self._cycle_in_progress = False
             self._emit_progress_updates()
             
@@ -187,12 +203,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         return float(self.progress.total_steps) * per_actuator
 
     def _finalize_engine_specifics(self) -> None:
-        cap = self.progress.repeat_index * float(self.progress.tt_seconds)
-        cumulative = self._task_cumulative_timer.elapsed()
-        if cumulative > cap:
-            cumulative = cap
-
-        self._task_timer.overwrite(cumulative) # mirror cumulative time on summary screen
-        self.progress.tt_seconds = float(cumulative)
+        cycle_estimate = self.estimate_total_time_seconds()
+        self.progress.tt_seconds = self.progress.repeat_index * cycle_estimate
 
         info("[ENGINE] finalizing motor measurement task")
