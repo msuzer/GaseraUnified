@@ -4,14 +4,15 @@
 from __future__ import annotations
 
 from system import services
+from system.log_utils import info, warn
 from gasera.acquisition.task_event import TaskEvent
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
-from system.log_utils import info, warn
 from gasera.acquisition.phase import Phase
 
 from gasera.acquisition.base import (
     BaseAcquisitionEngine,
+    MeasurementStartMode,
     GASERA_CMD_SETTLE_TIME
 )
 
@@ -47,9 +48,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
     def _validate_and_load_config(self) -> tuple[bool, str]:
         super()._validate_and_load_config()
+        
+        info(f"[ENGINE] Starting Motor Engine with Mode: {self.cfg.measurement_start_mode}")
 
         self.cfg.actuator_ids=DEFAULT_ACTUATOR_IDS
-
+        
         # UI contract fields (unbounded run)
         self.progress.enabled_count = len(self.cfg.actuator_ids)
         self.cfg.repeat_count = 0  # unbounded for motor engine
@@ -61,6 +64,14 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         return True, "Configuration valid"
 
     def _on_start_prepare(self) -> tuple[bool, str]:
+        assert self.cfg is not None
+
+        if self.cfg.measurement_start_mode == MeasurementStartMode.PER_TASK:
+            info("[ENGINE] Starting Gasera measurement (per-task mode)")
+            ok, msg = self._start_measurement()
+            if not ok:
+                return False, msg
+
         return True, "ok"
 
     def _can_finish_now(self) -> bool:
@@ -115,10 +126,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self._emit_task_events(TaskEvent.CYCLE_STARTED)
         
         try:
-            ok, msg = self._start_measurement()
-            if not ok:
-                warn(f"[ENGINE] start_measurement failed: {msg}")
-                return False
+            if self.cfg.measurement_start_mode == MeasurementStartMode.PER_CYCLE:
+                ok, msg = self._start_measurement()
+                if not ok:
+                    warn(f"[ENGINE] start_measurement failed: {msg}")
+                    return False
 
             for idx, actuator_id in enumerate(self.cfg.actuator_ids):
                 if self._stop_event.is_set():
@@ -143,8 +155,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
             services.buzzer.play("completed")
 
         finally:
-            if not self._stop_measurement():
-                warn("[ENGINE] Failed to stop Gasera after cycle completion")
+            if self.cfg.measurement_start_mode == MeasurementStartMode.PER_CYCLE:
+                if not self._stop_measurement():
+                    warn("[ENGINE] Failed to stop Gasera after cycle completion")
 
             self._cycle_timer.pause()
             self._task_timer.pause()

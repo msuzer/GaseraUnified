@@ -6,6 +6,7 @@
   "buzzer_enabled": true,
   "simulator_enabled": false,
   "online_mode_enabled": true,
+  "measurement_start_mode": "per_cycle",
   "include_channels": [
     1,
     1,

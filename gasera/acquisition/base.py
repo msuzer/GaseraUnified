@@ -14,6 +14,7 @@ import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Optional, Callable
+from enum import Enum
 
 from system import services
 from gasera.controller import TaskIDs
@@ -28,6 +29,7 @@ from gasera.acquisition.progress import Progress
 
 from system.preferences import (
     KEY_MEASUREMENT_DURATION,
+    KEY_MEASUREMENT_START_MODE,
     KEY_MOTOR_TIMEOUT,
     KEY_PAUSE_SECONDS,
     KEY_REPEAT_COUNT,
@@ -36,6 +38,9 @@ from system.preferences import (
 SWITCHING_SETTLE_TIME = 5.0          # mux settle time
 GASERA_CMD_SETTLE_TIME = 1.0         # allow Gasera to process mode/start/stop
 
+class MeasurementStartMode(str, Enum):
+    PER_TASK = "per_task"
+    PER_CYCLE = "per_cycle"
 
 @dataclass
 class TaskConfig:
@@ -45,6 +50,7 @@ class TaskConfig:
     repeat_count: Optional[int] = None  # mux only
     include_channels: Optional[list[int]] = field(default_factory=list)  # mux only
     actuator_ids: Optional[tuple[str, ...]] = None  # motor only
+    measurement_start_mode: Optional[MeasurementStartMode] = MeasurementStartMode.PER_CYCLE
 
 class BaseAcquisitionEngine(ABC):
     def __init__(self, motion: MotionInterface):
@@ -94,8 +100,30 @@ class BaseAcquisitionEngine(ABC):
                 pass
 
     # -----------------------------
-    # Public API
+    #
     # -----------------------------
+    def _validate_and_load_config(self) -> tuple[bool, str]:
+        prefs = services.preferences_service
+        raw_mode = prefs.get(KEY_MEASUREMENT_START_MODE, MeasurementStartMode.PER_CYCLE)
+        
+        try:
+            raw_mode = MeasurementStartMode(raw_mode)
+        except Exception:
+            warn(f"[ENGINE] Invalid measurement_start_mode '{raw_mode}', defaulting to per_cycle")
+            raw_mode = MeasurementStartMode.PER_CYCLE
+
+        cfg = TaskConfig(
+            measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 300)),
+            pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 300)),
+            repeat_count=int(prefs.get(KEY_REPEAT_COUNT, 1)),
+            motion_timeout=int(prefs.get(KEY_MOTOR_TIMEOUT, 30)),
+            measurement_start_mode = raw_mode
+        )
+
+        self.cfg = cfg
+        
+        return True, "Configuration valid"
+
     def start(self) -> tuple[bool, str]:
         with self._lock:
             if self.is_running():
@@ -164,19 +192,6 @@ class BaseAcquisitionEngine(ABC):
         info("[ENGINE] not supported by this engine")
         return False
 
-    def _validate_and_load_config(self) -> tuple[bool, str]:
-        prefs = services.preferences_service
-        cfg = TaskConfig(
-            measure_seconds=int(prefs.get(KEY_MEASUREMENT_DURATION, 300)),
-            pause_seconds=int(prefs.get(KEY_PAUSE_SECONDS, 300)),
-            repeat_count=int(prefs.get(KEY_REPEAT_COUNT, 1)),
-            motion_timeout=int(prefs.get(KEY_MOTOR_TIMEOUT, 30))
-        )
-
-        self.cfg = cfg
-        
-        return True, "Configuration valid"
-
     # -----------------------------
     # Hooks / abstract methods
     # -----------------------------
@@ -199,6 +214,25 @@ class BaseAcquisitionEngine(ABC):
     def _finalize_engine_specifics(self) -> None:
         """Finalize engine-specific summary numbers before the common finalization."""
         ...
+
+    # -----------------------------
+    # Worker wrapper
+    # -----------------------------
+    def _run_loop_wrapper(self):
+        assert self.cfg is not None
+        info(
+            f"[ENGINE] start: measure={self.cfg.measure_seconds}s, pause={self.cfg.pause_seconds}s, "
+            f"repeat={self.cfg.repeat_count}, enabled_channels={self.progress.enabled_count}, motion_timeout={self.cfg.motion_timeout}s"
+        )
+
+        try:
+            self._task_timer.reset()
+            self._run_loop()
+        except Exception as e:
+            error(f"[ENGINE] unhandled exception: {e}")
+            self._stop_event.set()
+        finally:
+            self._finalize_run()
 
     def _finalize_run(self) -> None:
         # 1. Let subclass finalize its summary numbers
@@ -232,25 +266,6 @@ class BaseAcquisitionEngine(ABC):
         if self.logger:
             self.logger.close()
             self.logger = None
-
-    # -----------------------------
-    # Worker wrapper
-    # -----------------------------
-    def _run_loop_wrapper(self):
-        assert self.cfg is not None
-        info(
-            f"[ENGINE] start: measure={self.cfg.measure_seconds}s, pause={self.cfg.pause_seconds}s, "
-            f"repeat={self.cfg.repeat_count}, enabled_channels={self.progress.enabled_count}, motion_timeout={self.cfg.motion_timeout}s"
-        )
-
-        try:
-            self._task_timer.reset()
-            self._run_loop()
-        except Exception as e:
-            error(f"[ENGINE] unhandled exception: {e}")
-            self._stop_event.set()
-        finally:
-            self._finalize_run()
 
     # -----------------------------
     # Shared helpers

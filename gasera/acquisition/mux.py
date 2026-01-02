@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from system import services
+from system.log_utils import debug, info, warn
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
-from system.log_utils import debug, info, warn
 from gasera.acquisition.phase import Phase
 
 from gasera.acquisition.base import (
@@ -56,6 +56,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
     def _on_start_prepare(self) -> tuple[bool, str]:
         assert self.cfg is not None
 
+        info("[ENGINE] Starting Gasera measurement")
         ok, msg = self._start_measurement()
         if not ok:
             return False, msg

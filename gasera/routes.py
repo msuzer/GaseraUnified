@@ -1,13 +1,11 @@
-from flask import Blueprint, jsonify, Response, stream_with_context, request
+import os, time, json
+from flask import Blueprint, jsonify, Response, stream_with_context, request, send_file
+
 from system import services
-from system.log_utils import verbose, debug, info, warn, error
 from gasera import gas_info
 from gasera.sse.utils import SseDeltaTracker
-
-import time, json
+from system.log_utils import verbose, debug, info, warn, error
 from .storage_utils import usb_mounted, get_log_directory, get_free_space, get_total_space, list_log_files, safe_join_in_logdir
-import os
-from flask import send_file
 
 gasera_bp = Blueprint("gasera", __name__)
 
@@ -72,6 +70,58 @@ def finish_measurement() -> tuple[Response, int]:
         return jsonify({"ok": False, "message": msg}), 200
 
     return jsonify({"ok": True, "message": "Finish requested"}), 200
+
+@gasera_bp.route("/api/measurement/config", methods=["GET"])
+def get_measurement_config() -> tuple[Response, int]:
+    from system.preferences import KEY_MEASUREMENT_START_MODE
+    from gasera.acquisition.base import MeasurementStartMode
+
+    try:
+        mode = services.preferences_service.get(
+            KEY_MEASUREMENT_START_MODE,
+            MeasurementStartMode.PER_CYCLE
+        )
+        return jsonify({
+            "ok": True,
+            KEY_MEASUREMENT_START_MODE: mode
+        }), 200
+
+    except Exception as e:
+        error(f"[MEAS] failed to read {KEY_MEASUREMENT_START_MODE}: {e}")
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
+
+@gasera_bp.route("/api/measurement/config", methods=["POST"])
+def update_measurement_config() -> tuple[Response, int]:
+    data = request.get_json(silent=True) or {}
+    
+    from gasera.acquisition.base import MeasurementStartMode
+    from system.preferences import KEY_MEASUREMENT_START_MODE
+    mode = data.get(KEY_MEASUREMENT_START_MODE)
+    
+    try:
+        mode = MeasurementStartMode(mode)
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error": f"{KEY_MEASUREMENT_START_MODE} must be "
+                    f"'{MeasurementStartMode.PER_TASK}' or "
+                    f"'{MeasurementStartMode.PER_CYCLE}'"
+        }), 400
+
+    try:
+        services.preferences_service.update_from_dict(
+            {KEY_MEASUREMENT_START_MODE: mode},
+            write_disk=True
+        )
+        info(f"[MEAS] {KEY_MEASUREMENT_START_MODE} set to {mode}")
+        return jsonify({"ok": True, KEY_MEASUREMENT_START_MODE: mode}), 200
+
+    except Exception as e:
+        error(f"[MEAS] failed to update {KEY_MEASUREMENT_START_MODE}: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 # ----------------------------------------------------------------------
 # Server-Sent Events
