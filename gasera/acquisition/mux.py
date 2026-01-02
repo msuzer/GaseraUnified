@@ -162,16 +162,17 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         per_channel = (
             float(self.cfg.pause_seconds) + 
             float(self.cfg.measure_seconds) +
-            float(SWITCHING_SETTLE_TIME)
+            float(self.cfg.motion_timeout)
         )
         
         return float(self.progress.total_steps) * per_channel + float(GASERA_CMD_SETTLE_TIME)
 
-    def _finalize_run(self) -> None:
+    def _finalize_engine_specifics(self) -> None:
         self._task_timer.pause()
         cap = float(self.progress.tt_seconds)
         elapsed = self._task_timer.elapsed()
         if elapsed > cap:
             elapsed = cap
-        self._task_timer.overwrite(elapsed) # show cumulative time on summary screen
+
+        self._task_timer.overwrite(elapsed)
         info("[ENGINE] finalizing MUX measurement task")

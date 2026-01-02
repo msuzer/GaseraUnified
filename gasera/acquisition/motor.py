@@ -186,12 +186,13 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         return float(self.progress.total_steps) * per_actuator
 
-    def _finalize_run(self) -> None:
+    def _finalize_engine_specifics(self) -> None:
         cap = self.progress.repeat_index * float(self.progress.tt_seconds)
         cumulative = self._task_cumulative_timer.elapsed()
         if cumulative > cap:
             cumulative = cap
-        self._task_timer.overwrite(cumulative) # show cumulative time on summary screen
-        self.progress.tt_seconds = float(cumulative)  # show cumulative time on summary screen
+
+        self._task_timer.overwrite(cumulative) # mirror cumulative time on summary screen
+        self.progress.tt_seconds = float(cumulative)
 
         info("[ENGINE] finalizing motor measurement task")

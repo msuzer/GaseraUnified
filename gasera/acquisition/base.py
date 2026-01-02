@@ -191,9 +191,41 @@ class BaseAcquisitionEngine(ABC):
         ...
 
     @abstractmethod
-    def _finalize_run(self) -> None:
-        """Finalize state and cleanup (called exactly once)."""
+    def _finalize_engine_specifics(self) -> None:
+        """Finalize engine-specific summary numbers before the common finalization."""
         ...
+
+    def _finalize_run(self) -> None:
+        # 1. Let subclass finalize its summary numbers
+        self._finalize_engine_specifics()
+
+        # 2. Final progress formatting
+        from gasera.acquisition.progress_view import ProgressView
+        pv = ProgressView(self.progress)
+        self.progress.progress_str = pv.progress_done_label
+
+        # 3. Resolve final state
+        if self._stop_event.is_set():
+            self._stop_event.clear()
+            self._set_phase(Phase.ABORTED)
+            self._emit_task_events(TaskEvent.TASK_ABORTED)
+            services.buzzer.play("cancel")
+            info("[ENGINE] Measurement run aborted by user")
+        else:
+            self._set_phase(Phase.IDLE)
+            self._emit_task_events(TaskEvent.TASK_FINISHED)
+            services.buzzer.play("completed")
+            info("[ENGINE] Measurement run complete")
+
+        # 4. Ensure Gasera is stopped
+        if not self.check_gasera_idle():
+            if not self._stop_measurement():
+                warn("[ENGINE] Failed to stop Gasera during finalization")
+
+        # 5. Close logger
+        if self.logger:
+            self.logger.close()
+            self.logger = None
 
     # -----------------------------
     # Worker wrapper
@@ -207,37 +239,11 @@ class BaseAcquisitionEngine(ABC):
 
         try:
             self._run_loop()
+        except Exception as e:
+            error(f"[ENGINE] unhandled exception: {e}")
+            self._stop_event.set()
         finally:
             self._finalize_run()
-
-            from gasera.acquisition.progress_view import ProgressView
-            pv = ProgressView(self.progress)
-            self.progress.duration_str = pv.duration_label
-            self.progress.progress_str = pv.progress_done_label
-
-            if self._stop_event.is_set():
-                self._stop_event.clear()
-                self._set_phase(Phase.ABORTED)
-                self._emit_task_events(TaskEvent.TASK_ABORTED)
-                services.buzzer.play("cancel")
-                info("[ENGINE] Measurement run aborted by user")
-            else:
-                self._set_phase(Phase.IDLE)
-                self._emit_task_events(TaskEvent.TASK_FINISHED)
-                services.buzzer.play("completed")
-                info("[ENGINE] Measurement run complete")
-
-        if not self.check_gasera_idle():
-            if not self._stop_measurement():
-                warn("[ENGINE] Failed to stop Gasera during finalization")
-
-        # Shared close-out
-        if self.logger:
-            try:
-                self.logger.close()
-            except Exception:
-                pass
-            self.logger = None
 
     # -----------------------------
     # Shared helpers
