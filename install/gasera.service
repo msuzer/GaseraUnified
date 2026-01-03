@@ -11,8 +11,8 @@ ExecStart=/usr/bin/python3 run.py
 Restart=on-failure
 
 # Security and file perms:
-# new files default to 640/750 instead of 666/777
-UMask=0027
+# new files default to 644/755 instead of 666/777
+UMask=0022
 
 # allow privilege escalation
 NoNewPrivileges=no
