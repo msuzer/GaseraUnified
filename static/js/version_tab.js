@@ -120,7 +120,7 @@ function vm_showSpinner(show) {
 }
 
 async function vm_forceRefresh() {
-  const st  = document.getElementById("vm-status");
+  const st = document.getElementById("vm-status");
   const sel = document.getElementById("vm-commit-select");
   const btn = document.getElementById("vm-refresh-btn");
 
@@ -131,7 +131,7 @@ async function vm_forceRefresh() {
   try {
     // ✅ Respect current stable/all mode
     const url = `${API_PATHS?.version?.github}?${VM_SHOW_STABLE ? "stable=1&" : ""}force=1`;
-    const res  = await safeFetch(url);
+    const res = await safeFetch(url);
     const data = await res.json();
 
     // ✅ Rebuild dropdown
@@ -247,15 +247,40 @@ async function vm_doRollback() {
 
 let VM_ADMIN_MODE = false;
 
+function vm_toggleSegmentMode() {
+  const t = document.getElementById('segmentsToggle');
+  if (t) {
+    window.LOGS_SEGMENTS_ENABLED = t.checked;
+    if (typeof window.refreshLogs === 'function') {
+      window.refreshLogs();
+    }
+  }
+}
+
 function vm_setAdminVisible(show) {
   const card = document.getElementById("vm-admin-section");
   if (card) card.style.display = show ? "" : "none";
+
+  // Also show/hide segments toggle in Results tab
+  const segWrap = document.getElementById("segmentsToggleWrap");
+  if (segWrap) segWrap.style.display = show ? "" : "none";
 }
 
 function vm_forceAdminReset(reason = "") {
   if (VM_ADMIN_MODE) {
     VM_ADMIN_MODE = false;
     vm_setAdminVisible(false);
+    // Reset segments mode toggle and global flag
+
+    if (typeof window !== "undefined") {
+      const segChk = document.getElementById("segmentsToggle");
+      if (segChk) {
+        segChk.checked = false;
+        // Trigger change to let listeners refresh logs list
+        segChk.dispatchEvent(new Event('change'));
+      }
+    }
+
     if (reason) console.log("Admin mode reset:", reason);
   }
 }
@@ -285,7 +310,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// 2. tab changes
+// 2. Any tab change: when a new tab is shown, reset
 document.addEventListener('shown.bs.tab', (event) => {
   const newTarget = event.target.getAttribute('data-bs-target');
   if (newTarget !== '#tab-version') {
@@ -293,13 +318,23 @@ document.addEventListener('shown.bs.tab', (event) => {
   }
 });
 
+// 3. Any tab hide: when leaving a tab, reset as well
+document.addEventListener('hidden.bs.tab', () => {
+  vm_forceAdminReset("Admin mode reset (tab hidden)");
+});
+
+// 4. Window loses focus (app not active)
+window.addEventListener('blur', () => {
+  vm_forceAdminReset("Admin mode reset (window blur)");
+});
+
 // init
 document.addEventListener("DOMContentLoaded", () => {
   // Restore last refresh time if available
   const savedTime = localStorage.getItem("GaseraMux_LastUpdateTime");
   if (savedTime) {
-      const el = document.getElementById("vm-last-update");
-      if (el) el.textContent = `🕓 Last updated: ${savedTime}`;
+    const el = document.getElementById("vm-last-update");
+    if (el) el.textContent = `🕓 Last updated: ${savedTime}`;
   }
 
   // Normal initialization
@@ -312,6 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("vm-checkout-btn").addEventListener("click", vm_doCheckout);
   document.getElementById("vm-rollback-btn").addEventListener("click", vm_doRollback);
   document.getElementById("vm-refresh-btn").addEventListener("click", vm_forceRefresh);
+  document.getElementById("segmentsToggle").addEventListener("change", vm_toggleSegmentMode);
 });
 
 // --- Mobile-friendly admin unlock: 7 taps ---

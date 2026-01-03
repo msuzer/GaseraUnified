@@ -174,7 +174,7 @@ function refreshStorageInfo() {
     });
 }
 
-function refreshLogs() {
+window.refreshLogs = function () {
   const loading = document.getElementById("logListLoading");
   const table = document.getElementById("logTable");
   const noLogs = document.getElementById("noLogsMsg");
@@ -272,7 +272,7 @@ function refreshLogs() {
       loading.textContent = "Failed to load logs.";
       console.error("[logs_panel] refreshLogs error:", err);
     });
-}
+};
 
 // Pagination buttons
 // Pagination bindings moved into DOMContentLoaded for safety
