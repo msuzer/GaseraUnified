@@ -148,8 +148,7 @@ class BaseAcquisitionEngine(ABC):
                 return False, msg
 
             # Initialize logging
-            log_path = get_log_directory()
-            self.logger = MeasurementLogger(log_path)
+            self.logger = MeasurementLogger()
 
             self._stop_event.clear()
             self._finish_event.clear()

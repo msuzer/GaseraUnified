@@ -2,6 +2,7 @@ import os, csv, uuid, time, shutil
 from datetime import datetime
 from typing import List
 
+from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn
 
 
@@ -15,20 +16,17 @@ class MeasurementLogger:
     - At successful task end, segments are merged into one CSV.
     """
 
-    SEGMENT_SECONDS = 3600  # 1 hour
+    SEGMENT_SECONDS = 3600  # new segment every hour
 
-    def __init__(self, base_dir="/data/logs"):
-        os.makedirs(base_dir, exist_ok=True)
+    def __init__(self):
+        self.base_dir = get_log_directory()
+        self.tmp_dir = get_log_directory(temp_dir=True)
 
-        self.base_dir = base_dir
         self.run_id = uuid.uuid4().hex[:6].upper()
 
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.task_name = f"gasera_log_{ts}_{self.run_id}"
-        self.final_path = os.path.join(base_dir, f"{self.task_name}.csv")
-
-        self.tmp_dir = os.path.join(base_dir, ".tmp")
-        os.makedirs(self.tmp_dir, exist_ok=True)
+        self.final_path = os.path.join(self.base_dir, f"{self.task_name}.csv")
 
         debug(f"[LOGGER] temp log dir: {self.tmp_dir}")
 

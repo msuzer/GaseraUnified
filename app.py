@@ -16,6 +16,10 @@ init_device()
 init_gpio_service()
 init_preferences_service()
 
+# Recover any incomplete log segments from previous runs
+from system.log_recovery_service import recover_incomplete_segments
+recover_incomplete_segments()
+
 from system.device.device_init import init_buzzer_service, init_display_stack, init_device_status_service
 # initialize buzzer service after preferences are available
 init_buzzer_service()
