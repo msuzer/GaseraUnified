@@ -346,37 +346,40 @@ function parseWideCSV(text) {
 
 window.downloadCSVFile = async function (filename) {
   const locale = document.getElementById("csvLocale")?.value || "en-US";
-  const url = `${API_PATHS?.logs?.download}${filename}?locale=${encodeURIComponent(locale)}`;
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-window.downloadCSVFile = async function (filename) {
-  const locale = document.getElementById("csvLocale")?.value || "en-US";
-
-  // Decide suffix
-  const suffix = (locale.toLowerCase().startsWith("tr")) ? "_tr" : "_us";
-
-  // Insert suffix before .csv
-  const outName = filename.toLowerCase().endsWith(".csv")
-    ? filename.replace(/\.csv$/i, `${suffix}.csv`)
+  const suffix = locale.toLowerCase().startsWith("tr") ? "_tr" : "_us";
+  const outName = /\.(csv|tsv)$/i.test(filename)
+    ? filename.replace(/\.(csv|tsv)$/i, `${suffix}.$1`)
     : `${filename}${suffix}`;
 
-  const url = `${API_PATHS?.logs?.download}${filename}` +
-              (locale.toLowerCase().startsWith("tr") ? `?locale=tr-TR` : "");
+  const url = `${API_PATHS?.logs?.download}${filename}?locale=${encodeURIComponent(locale)}${getSegmentsParam()}`;
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = outName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+  try {
+    const resp = await safeFetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const blob = await resp.blob();
+    const objUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objUrl;
+    link.download = outName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objUrl);
+  } catch (err) {
+    console.error("[results_tab] CSV download failed:", err);
+    window.showConfirmModal && window.showConfirmModal({
+      title: "Download Failed",
+      message: "Could not download CSV file. Please try again.",
+      confirmText: "OK",
+      cancelText: "",
+      confirmClass: "btn-primary",
+      headerClass: "bg-warning-subtle"
+    });
+  }
+};
 
 async function chartLoadCSVSeries(filename) {
   if (window.lastSSEPhase !== window.PHASE.IDLE && window.lastSSEPhase !== window.PHASE.ABORTED) {
@@ -395,7 +398,7 @@ async function chartLoadCSVSeries(filename) {
   window.currentCSV = filename;
 
   try {
-    const resp = await fetch(`${API_PATHS?.logs?.download}${filename}`);
+    const resp = await safeFetch(`${API_PATHS?.logs?.download}${filename}${window.LOGS_SEGMENTS_ENABLED ? "?segments=1" : ""}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     
     const text = await resp.text();

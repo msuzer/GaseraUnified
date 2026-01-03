@@ -188,7 +188,7 @@ function refreshLogs() {
   noLogs.style.display = "none"; // hide empty-state while fetching
   body.innerHTML = ""; // clear old rows
 
-  safeFetch(`${API_PATHS?.logs?.list}?page=${currentPage}&page_size=${PAGE_SIZE}`)
+  safeFetch(`${API_PATHS?.logs?.list}?page=${currentPage}&page_size=${PAGE_SIZE}${getSegmentsParam()}`)
     .then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
@@ -286,7 +286,7 @@ function deleteLog(name) {
     confirmClass: "btn-danger",
     headerClass: "bg-danger-subtle",
     onConfirm: () => {
-      safeFetch(`${API_PATHS?.logs?.delete}${encodeURIComponent(name)}`, { method: "DELETE" })
+      safeFetch(`${API_PATHS?.logs?.delete}${encodeURIComponent(name)}${window.LOGS_SEGMENTS_ENABLED ? "?segments=1" : ""}`, { method: "DELETE" })
         .then(r => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();

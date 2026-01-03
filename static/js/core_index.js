@@ -3,6 +3,15 @@
 // ============================================================
 // console.log("[core_index] loaded");
 
+// --------------------------------------------------------------
+// Global setting for segment-based logs operations
+// Returns "&segments=1" or "" to be appended to URLs with existing query
+// --------------------------------------------------------------
+window.LOGS_SEGMENTS_ENABLED = false;
+window.getSegmentsParam = function () {
+    return window.LOGS_SEGMENTS_ENABLED ? "&segments=1" : "";
+};
+
 // ---------------------------------------------------------------------
 // UI Capabilities (set by server on page load)
 // ---------------------------------------------------------------------
