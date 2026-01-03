@@ -177,9 +177,11 @@ def sse_events() -> Response:
 def list_logs():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 50))
+    get_segments = request.args.get("segments", "").lower() in ("1", "true", "yes")
 
-    result = list_log_files(page, page_size)
+    result = list_log_files(page, page_size, get_segments=get_segments)
     result["ok"] = True
+    result["segments"] = get_segments
     return jsonify(result)
 
 def stream_csv_with_locale(path: str, locale: str):
@@ -198,11 +200,26 @@ def stream_csv_with_locale(path: str, locale: str):
 
 @gasera_bp.route("/api/logs/<path:filename>", methods=["GET"])
 def download_log(filename):
+    get_segments = request.args.get("segments", "").lower() in ("1", "true", "yes")
+    log_dir = get_log_directory(temp_dir=get_segments)
+    path = safe_join_in_logdir(log_dir, filename)
+    locale = request.args.get("locale")
+
     try:
-        path = safe_join_in_logdir(filename)
+        if get_segments and not filename.lower().endswith(".tsv"):
+            return Response(
+                "Segment files can only be downloaded in the default format (TSV).",
+                status=400,
+                mimetype="text/plain"
+            )
 
-        locale = request.args.get("locale")
-
+        if not get_segments and not filename.lower().endswith(".csv"):
+            return Response(
+                "Log files can only be downloaded in the default format (CSV).",
+                status=400,
+                mimetype="text/plain"
+            )
+        
         # Canonical path: no locale or US locale
         if not locale or locale in ("en-US"):
             return send_file(path, as_attachment=True)
@@ -218,6 +235,40 @@ def download_log(filename):
 
     except FileNotFoundError:
         return jsonify({"ok": False, "error": "File not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@gasera_bp.route("/api/logs/delete/<path:filename>", methods=["DELETE"])
+def delete_log(filename):
+    get_segments = request.args.get("segments", "").lower() in ("1", "true", "yes")
+    log_dir = get_log_directory(temp_dir=get_segments)
+    path = safe_join_in_logdir(log_dir, filename)
+
+    try:
+        if get_segments and not filename.lower().endswith(".tsv"):
+            jsonify({"ok": False, "error": "Segment files can only be deleted in the default format (TSV)."}), 400
+
+        if not get_segments and not filename.lower().endswith(".csv"):
+            return jsonify({"ok": False, "error": "Log files can only be deleted in the default format (CSV)."}), 400
+
+        os.remove(path)
+        return jsonify({"ok": True, "deleted_file": filename, "segments": get_segments}), 200
+    except FileNotFoundError:
+        return jsonify({"ok": False, "error": "File not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@gasera_bp.route("/api/logs/delete_all", methods=["DELETE"])
+def delete_all_logs():
+    get_segments = request.args.get("segments", "").lower() in ("1", "true", "yes")
+    log_dir = get_log_directory(temp_dir=get_segments)
+    ext = ".tsv" if get_segments else ".csv"
+
+    try:
+        files = [f for f in os.listdir(log_dir) if f.lower().endswith(ext)]
+        for f in files:
+            os.remove(os.path.join(log_dir, f))
+        return jsonify({"ok": True, "deleted_files": len(files)}), 200
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -248,25 +299,3 @@ def log_storage_info():
     }
     
     return jsonify(info), 200
-
-@gasera_bp.route("/api/logs/delete/<path:filename>", methods=["DELETE"])
-def delete_log(filename):
-    try:
-        path = safe_join_in_logdir(filename)
-        os.remove(path)
-        return jsonify({"ok": True}), 200
-    except FileNotFoundError:
-        return jsonify({"ok": False, "error": "File not found"}), 404
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-@gasera_bp.route("/api/logs/delete_all", methods=["DELETE"])
-def delete_all_logs():
-    log_dir = get_log_directory()
-    try:
-        files = [f for f in os.listdir(log_dir) if f.lower().endswith(".csv")]
-        for f in files:
-            os.remove(os.path.join(log_dir, f))
-        return jsonify({"ok": True, "deleted_files": len(files)}), 200
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500

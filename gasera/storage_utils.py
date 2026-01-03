@@ -116,7 +116,7 @@ def get_log_entries(get_segments: bool = False) -> list:
     return entries
 
 
-def list_log_files(page=1, page_size=50):
+def list_log_files(page=1, page_size=50, get_segments: bool = False) -> dict:
     """
     Paginated logs listing.
     Returns dict: {"total": int, "files": [...], "page": int, "page_size": int}
@@ -136,7 +136,7 @@ def list_log_files(page=1, page_size=50):
     if page_size <= 0:
         page_size = 50
 
-    entries = get_log_entries()
+    entries = get_log_entries(get_segments=get_segments)
     total = len(entries)
 
     start = (page - 1) * page_size
@@ -153,12 +153,11 @@ def list_log_files(page=1, page_size=50):
     }
 
 
-def safe_join_in_logdir(filename):
+def safe_join_in_logdir(log_dir, filename):
     """
     Prevents path traversal. Returns the safe absolute path for a log file.
     Raises FileNotFoundError if file does not exist.
     """
-    log_dir = get_log_directory()
     safe_name = os.path.basename(filename)
     full = os.path.join(log_dir, safe_name)
 
