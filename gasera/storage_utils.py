@@ -68,33 +68,36 @@ def check_usb_change():
     # No change
     return current_usb, None
 
-def get_log_directory():
+def get_log_directory(temp_dir: bool = False) -> str:
+    log_dir = "/data/logs"
     if usb_mounted():
-        usb_logs = "/media/usb0/logs"
-        os.makedirs(usb_logs, exist_ok=True)
-        return usb_logs
+        log_dir = "/media/usb0/logs"
+    if temp_dir:
+        log_dir = os.path.join(log_dir, ".tmp")
+    
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
 
-    internal_logs = "/data/logs"
-    os.makedirs(internal_logs, exist_ok=True)
-    return internal_logs
-
-def get_log_entries():
+def get_log_entries(get_segments: bool = False) -> list:
     """
-    Returns a sorted list of all log entries in the active log directory.
+    Returns completed CSV logs by default.
+    If get_segments=True, returns incomplete TSV segment files from .tmp.
     Each entry is {name, size, mtime}.
     Sorted: newest → oldest.
     """
-    logdir = get_log_directory()
+    logdir = get_log_directory(temp_dir=get_segments)
     if not os.path.exists(logdir):
         return []
+
+    extension = ".tsv" if get_segments else ".csv"
 
     entries = []
     for fname in os.listdir(logdir):
         full = os.path.join(logdir, fname)
         if not os.path.isfile(full):
             continue
-        # Only include CSV logs
-        if not fname.lower().endswith(".csv"):
+        # Only include CSV/TSV logs
+        if not fname.lower().endswith(extension):
             continue
 
         try:
