@@ -147,7 +147,9 @@ ROOT_FSTYPE="$(findmnt -no FSTYPE / || true)"
 
 log "Root: $ROOT_SRC ($ROOT_FSTYPE)"
 
-# 1) Add noatime,nodiratime,commit=60,data=writeback to root (ext4)
+# 1) Add safe ext4 options to root:
+#    noatime,nodiratime,lazytime,commit=60,errors=remount-ro
+#    (explicitly avoid data=writeback)
 if [[ "$ROOT_FSTYPE" == "ext4" ]]; then
   backup_file /etc/fstab
   if grep -E "^[^#].*\s/\s+ext4\s" /etc/fstab >/dev/null; then
@@ -155,24 +157,40 @@ if [[ "$ROOT_FSTYPE" == "ext4" ]]; then
     NEW_LINE="$(echo "$CURRENT_LINE" | awk '{
       opts=$4;
       if (opts=="" || opts=="defaults") opts="defaults";
+      # ensure noatime
       if (opts !~ /(^|,)noatime(,|$)/) opts=opts",noatime";
+      # ensure nodiratime
       if (opts !~ /(^|,)nodiratime(,|$)/) opts=opts",nodiratime";
+      # ensure commit=60
       if (opts !~ /(^|,)commit=[0-9]+(,|$)/) opts=opts",commit=60";
-      if (opts !~ /(^|,)data=writeback(,|$)/) opts=opts",data=writeback";
+      # ensure lazytime
+      if (opts !~ /(^|,)lazytime(,|$)/) opts=opts",lazytime";
+      # ensure errors=remount-ro
+      if (opts !~ /(^|,)errors=remount-ro(,|$)/) opts=opts",errors=remount-ro";
+      # UPDATE commit= to 60 if present
+      gsub(/commit=[0-9]+/, "commit=60", opts)
+      # REMOVE data=writeback if present
+      gsub(/(^|,)data=writeback(,|$)/, ",", opts);
+      gsub(/,,+/, ",", opts);
+      gsub(/^,|,$/, "", opts);
       $4=opts; print
     }')"
 
     if [[ "$CURRENT_LINE" != "$NEW_LINE" ]]; then
       run "sed -i \"s@$(printf '%s' "$CURRENT_LINE" | sed 's:[].[^$\/\\*]:\\&:g')@$NEW_LINE@\" /etc/fstab"
-      log "Updated ext4 mount options for / -> noatime,nodiratime,commit=60,data=writeback"
+      log "Updated ext4 mount options for / -> noatime,nodiratime,lazytime,commit=60,errors=remount-ro"
     fi
   fi
 
-  # Live remount
-  run "mount -o remount,noatime,nodiratime,commit=60,data=writeback /"
+  # Live remount (done in 7) after all tweaks
+  # run "mount -o remount,noatime,nodiratime,lazytime,commit=60,errors=remount-ro /"
 fi
 
 # 2) tmpfs for /var/log, /tmp, /var/tmp
+sed -i '/^[^#].*\s\/tmp\s\+tmpfs/d' /etc/fstab
+sed -i '/^[^#].*\s\/var\/tmp\s\+tmpfs/d' /etc/fstab
+sed -i '/^[^#].*\s\/var\/log\s\+tmpfs/d' /etc/fstab
+
 ensure_fstab_entry "tmpfs /var/log  tmpfs defaults,noatime,nodiratime,mode=0755,size=50m 0 0"
 ensure_fstab_entry "tmpfs /tmp      tmpfs defaults,noatime,nodiratime,mode=1777,size=100m 0 0"
 ensure_fstab_entry "tmpfs /var/tmp  tmpfs defaults,noatime,nodiratime,mode=1777,size=100m 0 0"
@@ -260,7 +278,8 @@ append_undo "run \"rm -f '$ULIMIT_SH'\""
 # 7) Mount changes live
 run "mount -a"
 if [[ "$ROOT_FSTYPE" == "ext4" ]]; then
-  run "mount -o remount /"
+  # Explicitly remount root with safe options
+  run "mount -o remount,noatime,nodiratime,lazytime,commit=60,errors=remount-ro /"
 fi
 run "systemctl restart systemd-journald || true"
 
