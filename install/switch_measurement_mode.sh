@@ -1,6 +1,20 @@
 #!/bin/bash
 set -e
 
+# --------------------------------------------------------------
+# GaseraMux: Switch Measurement Start Mode
+# --------------------------------------------------------------
+# Purpose:
+#   Configure when the Gasera measurement starts for MOTOR tasks
+#   via the local REST API (
+#   /gasera/api/measurement/config).
+#
+# Quick usage:
+#   - Run without arguments or with 'status' to see usage and
+#     show the current configuration.
+#   - Requires root (sudo).
+# --------------------------------------------------------------
+
 MODE="$1"
 HOST="http://127.0.0.1"   # adjust if needed
 ENDPOINT="$HOST/gasera/api/measurement/config"
@@ -37,15 +51,6 @@ show_status() {
 }
 
 # --------------------------------------------------------------
-# Require root
-# --------------------------------------------------------------
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root (sudo $0)"
-  usage
-  exit 1
-fi
-
-# --------------------------------------------------------------
 # Handle status / missing / invalid arguments
 # --------------------------------------------------------------
 if [[ -z "$MODE" || "$MODE" == "status" ]]; then
@@ -58,6 +63,15 @@ if [[ "$MODE" != "per_cycle" && "$MODE" != "per_task" ]]; then
   echo "[ERROR] Invalid argument: $MODE"
   usage
   show_status
+  exit 1
+fi
+
+# --------------------------------------------------------------
+# Require root for modifications
+# --------------------------------------------------------------
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root (sudo $0)"
+  usage
   exit 1
 fi
 

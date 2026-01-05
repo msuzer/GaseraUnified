@@ -120,9 +120,12 @@ fi
 echo "[1/12] Update & install packages..."
 export DEBIAN_FRONTEND=noninteractive
 apt update
-apt-get -yq install isc-dhcp-server nginx python3 gpiod python3-pip python3-flask python3-waitress \
-               python3-netifaces python3-libgpiod python3-psutil python3-luma.oled python3-requests \
-               python3-smbus git network-manager hostapd dnsmasq curl net-tools socat dos2unix
+apt-get -yq install isc-dhcp-server nginx python3 python3-pip python3-flask python3-waitress \
+               python3-libgpiod python3-luma.oled python3-requests git network-manager curl
+
+# Python packages (pip) required by the app
+pip3 install --no-cache-dir --upgrade pip
+pip3 install --no-cache-dir smbus2
 
 # Remove brltty if installed (conflicts with USB-serial)
 if dpkg -l | grep -q '^ii  brltty'; then

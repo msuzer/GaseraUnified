@@ -144,6 +144,8 @@ cd GaseraMux/install
 sudo chmod 744 *.sh
 sudo ./deploy.sh
 ```
+  - See deployment scripts overview: [docs/deployment_scripts.md](docs/deployment_scripts.md)
+  - See system service, Nginx, udev, prefs, and USB setup: [docs/system_configs.md](docs/system_configs.md)
 
 This will:
 
@@ -316,6 +318,10 @@ T: 01.12.2025 14:38
 * [GitHub Repository](https://github.com/msuzer/GaseraMux)
 * [Issue Tracker](https://github.com/msuzer/GaseraMux/issues)
 * [Releases](https://github.com/msuzer/GaseraMux/releases)
+ * Admin Utilities: see [docs/admin_utilities.md](docs/admin_utilities.md)
+ * Measurement Logger: see [docs/measurement_logger.md](docs/measurement_logger.md)
+  * System Configs: see [docs/system_configs.md](docs/system_configs.md)
+  * Frontend User Manual: see [docs/frontend_user_manual.md](docs/frontend_user_manual.md)
 
 ---
 

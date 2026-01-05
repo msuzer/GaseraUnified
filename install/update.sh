@@ -64,7 +64,7 @@ if [ ! -d "$APP_DIR/.git" ]; then
 fi
 
 # Preserve existing device profile choice
-DEVICE_FILE="$APP_DIR/device/device_profile.py"
+DEVICE_FILE="$APP_DIR/system/device/device_profile.py"
 
 if [ -f "$DEVICE_FILE" ]; then
   echo "🔒 Preserving existing device profile"
