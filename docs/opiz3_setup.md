@@ -194,9 +194,9 @@ sudo reboot
 ## ✅ Success!
 
 You're now connected to OPiZ3 via SSH. You can proceed to:
-- **Network configuration**: See [network_setup.md](network_setup.md)
-- **GaseraMux deployment**: Run `deploy.sh` from GitHub or local copy
-- **System optimization**: See [system_maintenance.md](system_maintenance.md) for SD card longevity tweaks
+- **Network configuration**: See [opiz3_network_setup.md](opiz3_network_setup.md)
+- **Deployment**: Run `install/deploy.sh` from the repo or local copy
+- **SD card longevity tweaks**: Use `install/sd_life_tweaks.sh` (offered by deploy script)
 
 ---
 

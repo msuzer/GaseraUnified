@@ -1,4 +1,19 @@
 
+# Gasera AK Protocol Overview
+
+This application speaks Gasera's AK protocol over TCP, using the helpers in [gasera/protocol.py](../gasera/protocol.py) and wiring in [gasera/controller.py](../gasera/controller.py). Below is a concise reference of the message framing and commands, followed by the original detailed notes.
+
+## Summary
+
+- Transport: TCP to the analyzer (default `192.168.0.100:8888`; simulator `127.0.0.1:8888`).
+- Framing: messages begin with STX (ASCII 0x02) and end with ETX (ASCII 0x03).
+- Requests include a function code and channel `K0`; responses include an error byte and data tokens.
+- Implemented commands in code: `ASTS`, `AMST`, `AERR`, `ATSK`, `STAM`, `STPM`, `ACON`, `SCON`, `SCOR`, `ANAM`, `STAT`, `AITR`, `ANET`, `SNET`, `ACLK`, `APAR`, `SONL`, `STUN`, `ATSP`, `ASYP`, `AMPS`, `ADEV`, `STST`, `ASTR`, `RDEV`.
+
+For usage examples, see [sim/server.py](../sim/server.py) and [install/test_gasera.py](../install/test_gasera.py).
+
+---
+
 ## AK protocol **format** as used by the GASERA ONE
 
 1) The AK request **format** (Client to GASERA ONE) is as follow:
@@ -280,7 +295,7 @@ response AMPS <**errorstatus**> <inlet-id> <active(0/1)> <byPassTimeSecs> <inlet
 **Retrieve** the inlet configuration for the Multi-Point Sampler (if available / connected).
 
 
-### Get Device In**format**ion – ADEV
+### Get Device Information – ADEV
 
 **Available from MW ver**. 2.4.0
 u. **format** ADEV K0
@@ -289,7 +304,7 @@ response ADEV <**errorstatus**> <Manufacturer> <Serial Number> <Device Name>
 ```
 <Firmware version>
 (**errorstatus**: 0=no errors, 1=error)
-**Retrieve** general device in**format**ion, such as manufacturer, serial number, and firmware version. Response fields are surrounded by double quotes. In case some field in the response is not available, an empty string is returned.
+**Retrieve** general device information, such as manufacturer, serial number, and firmware version. Response fields are surrounded by double quotes. In case some field in the response is not available, an empty string is returned.
 
 
 ### Start Device Self-Test – STST
@@ -395,6 +410,13 @@ This indicates that error code 8001 is currently active. List of most common err
 
 ---
 
-## 🔗 Resources
+## CLI Testing Tips
 
-- GASERA ONE AK Protocol-rev_h
+Send a status request with netcat:
+
+```bash
+echo -e '\x02 ASTS K0 \x03' | nc 192.168.0.100 8888
+```
+
+Run the simulator locally and target `127.0.0.1:8888` in preferences (`simulator_enabled=true`) or via `/settings/service/restart` with `{ "useSimulator": true }`.
+
