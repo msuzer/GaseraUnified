@@ -20,7 +20,6 @@ from system import services
 from gasera.controller import TaskIDs
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
-from gasera.storage_utils import get_log_directory
 from system.log_utils import debug, info, warn, error
 from gasera.measurement_logger import MeasurementLogger
 from gasera.acquisition.task_event import TaskEvent
@@ -33,14 +32,11 @@ from system.preferences import (
     KEY_MOTOR_TIMEOUT,
     KEY_PAUSE_SECONDS,
     KEY_REPEAT_COUNT,
+    MeasurementStartMode,
 )
 
 SWITCHING_SETTLE_TIME = 5.0          # mux settle time
 GASERA_CMD_SETTLE_TIME = 1.0         # allow Gasera to process mode/start/stop
-
-class MeasurementStartMode(str, Enum):
-    PER_TASK = "per_task"
-    PER_CYCLE = "per_cycle"
 
 @dataclass
 class TaskConfig:

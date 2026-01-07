@@ -7,8 +7,6 @@ from system.log_utils import debug, info, warn, error
 from system import services
 from system.services import engine_service as engine
 
-from system.preferences import DEFAULTS, KEY_BUZZER_ENABLED
-
 system_bp = Blueprint("system", __name__)
 
 # ----------------------------------------------------------------------
@@ -111,6 +109,7 @@ def get_preferences() -> tuple[Response, int]:
     Returns the merged dictionary of defaults and stored prefs.
     Always includes all known keys.
     """
+    from system.preferences import DEFAULTS
     merged = {**DEFAULTS, **services.preferences_service.as_dict()}
     return jsonify(merged), 200
 
@@ -141,6 +140,7 @@ def update_preferences() -> tuple[Response, int]:
 @system_bp.route("/prefs/defaults", methods=["GET"])
 def get_defaults() -> tuple[Response, int]:
     """Return the factory default preference values."""
+    from system.preferences import DEFAULTS
     return jsonify(DEFAULTS), 200
 
 # ----------------------------------------------------------------------
@@ -155,6 +155,7 @@ def get_buzzer_state() -> tuple[Response, int]:
     try:
         enabled = getattr(services.buzzer, "enabled", None)
         if enabled is None:
+            from system.preferences import KEY_BUZZER_ENABLED
             enabled = services.preferences_service.get(KEY_BUZZER_ENABLED, True)
         return jsonify({"ok": True, "enabled": bool(enabled)}), 200
     except Exception as e:
@@ -183,6 +184,7 @@ def set_buzzer_state() -> tuple[Response, int]:
             services.buzzer.enabled = enabled
 
         # Persist to preferences
+        from system.preferences import KEY_BUZZER_ENABLED
         services.preferences_service.update_from_dict({KEY_BUZZER_ENABLED: enabled}, write_disk=True)
         debug(f"[BUZZER] {'enabled' if enabled else 'disabled'} via POST")
         return jsonify({"ok": True, "enabled": enabled}), 200

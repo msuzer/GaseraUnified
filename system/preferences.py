@@ -1,8 +1,12 @@
+from enum import Enum
 import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List
-from gasera.acquisition.base import MeasurementStartMode
 from system.log_utils import debug, warn, error
+
+class MeasurementStartMode(str, Enum):
+    PER_TASK = "per_task"
+    PER_CYCLE = "per_cycle"
 
 # --- Channel State Constants ---
 class ChannelState:
