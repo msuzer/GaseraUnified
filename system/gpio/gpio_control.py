@@ -2,6 +2,9 @@ import threading
 import gpiod
 
 # Common pin map
+# PC14 and PC15 starts as inputs upon boot up, thus outputting HIGH, do not use them as output pins.
+# PI16 works on armbian but marked as 'used' on debian bookworm, do not use it.
+
 PIN_MAP = {
     "PC1": 65, "PC5": 69, "PC6": 70, "PC7": 71, "PC8": 72, "PC9": 73, "PC10": 74, "PC11": 75, "PC14": 78, "PC15": 79,
     "PH2": 226, "PH3": 227, "PH4": 228, "PH5": 229, "PH6": 230, "PH7": 231, "PH8": 232, "PH9": 233,

@@ -25,10 +25,10 @@ def build_engine() -> BaseAcquisitionEngine:
             "M1_CW":  (PINS.BOARD_IN3_PIN, ("1", "cw")),
             "M1_CCW": (PINS.BOARD_IN4_PIN, ("1", "ccw")),
         },
-        debounce_ms=50,
+        debounce_ms=200,
     )
     button_monitor.start()
 
-    motion = MotorMotion(motors)
+    motion = MotorMotion()
 
     return AcquisitionEngine(motion)

@@ -1,35 +1,16 @@
 # motion/motor_motion.py
-from system.motor.bank import MotorBank
 from system import services
 
 
 class MotorMotion:
-    def __init__(self, motors: MotorBank):
-        self.motors = motors
-
     def home(self, unit_id):
         mc = services.motor_controller
-        
-        # prefer motor controller service if available
-        if mc is not None:
-            mc.start(unit_id, "ccw", enable_timeout=True)
-        else:
-            self.motors.get(unit_id).move_backward()
+        mc.start(unit_id, "ccw", enable_timeout=True)
 
     def step(self, unit_id):
         mc = services.motor_controller
-        
-        # prefer motor controller service if available
-        if mc is not None:
-            mc.start(unit_id, "cw", enable_timeout=False)
-        else:
-            self.motors.get(unit_id).move_forward()
+        mc.start(unit_id, "cw", enable_timeout=False)
     
     def reset(self, unit_id):
         mc = services.motor_controller
-        
-        # prefer motor controller service if available
-        if mc is not None:
-            mc.stop(unit_id)
-        else:
-            self.motors.get(unit_id).stop()
+        mc.stop(unit_id)

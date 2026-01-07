@@ -1,18 +1,17 @@
 # pin_assignments.py
 
-# PC14 and PC15 starts as inputs upon boot up, thus outputting HIGH, do not use them as output pins.
-# PI16 works on armbian but marked as 'used' on debian bookworm, do not use it.
+from system.device.device_profile import Device
 
 # -------------------------------
 # Hardware profiles
 # -------------------------------
 
 _PIN_PROFILES = {
-    "relay_board": {
+    Device.MOTOR: {
         "BUZZER_PIN":  "PH2",
         "TRIGGER_PIN": "PC10",
     },
-    "optocoupler_board": {
+    Device.MUX: {
         "BUZZER_PIN":  "PH8",
         "TRIGGER_PIN": "PH9",
     },
@@ -22,7 +21,7 @@ _PIN_PROFILES = {
 # Default profile
 # -------------------------------
 
-_DEFAULT_PROFILE = "relay_board"
+_DEFAULT_PROFILE = Device.MOTOR
 
 # -------------------------------
 # Public pins (resolved)
@@ -30,12 +29,12 @@ _DEFAULT_PROFILE = "relay_board"
 
 _PROFILE = _DEFAULT_PROFILE
 
-def select_profile(name: str):
+def select_profile(profile: Device):
     global _PROFILE, BUZZER_PIN, TRIGGER_PIN
-    if name not in _PIN_PROFILES:
-        raise ValueError(f"Unknown pin profile: {name}")
-    _PROFILE = name
-
+    if profile not in _PIN_PROFILES:
+        raise ValueError(f"Unknown pin profile: {profile}")
+    _PROFILE = profile
+    
     BUZZER_PIN  = _PIN_PROFILES[_PROFILE]["BUZZER_PIN"]
     TRIGGER_PIN = _PIN_PROFILES[_PROFILE]["TRIGGER_PIN"]
 

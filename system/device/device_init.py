@@ -6,14 +6,9 @@ from system.log_utils import info, debug
 
 
 def init_device():
-    if DEVICE == Device.MUX:
-        select_profile("optocoupler_board")
-        info("[DEVICE] Initialized MUX hardware profile")
-
-    elif DEVICE == Device.MOTOR:
-        select_profile("relay_board")
-        info("[DEVICE] Initialized MOTOR hardware profile")
-
+    if DEVICE in (Device.MUX, Device.MOTOR):
+        select_profile(DEVICE)
+        info(f"[DEVICE] Initialized {DEVICE.name} hardware profile")
     else:
         raise RuntimeError(f"Unsupported device: {DEVICE}")
 
