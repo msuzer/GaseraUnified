@@ -146,7 +146,11 @@ mkdir -p "$INTERNAL_LOG_DIR"
 chown -R "$USER:$USER" "$INTERNAL_LOG_DIR"
 chmod 775 "$INTERNAL_LOG_DIR"
 
-if mountpoint -q /media/usb0; then
+# Detect real removable USB disk (sdX with RM=1)
+USB_DISK="$(lsblk -nr -o NAME,RM,TYPE | awk '$2==1 && $3=="disk" {print "/dev/"$1; exit}')"
+
+if [[ -n "$USB_DISK" ]]; then
+  echo "🔧 USB drive detected at $USB_DISK — applying log directory permissions..."
   mkdir -p "$USB_LOGS_DIR"
   chown -R "$USER:$USER" "$USB_LOGS_DIR"
   chmod 775 "$USB_LOGS_DIR"

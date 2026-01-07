@@ -19,8 +19,9 @@ LEASE_IP="192.168.0.100"
 APP_STORE="https://github.com"
 APP_OWNER="msuzer"
 APP_NAME="GaseraMux"
+REPO_NAME="GaseraUnified"
 APP_DIR="/opt/$APP_NAME"
-REPO_URL="$APP_STORE/$APP_OWNER/$APP_NAME.git"
+REPO_URL="$APP_STORE/$APP_OWNER/$REPO_NAME.git"
 PREFS_FILE="$APP_DIR/config/user_prefs.json"
 PREFS_FILE_TEMPLATE="$APP_DIR/install/user_prefs.template"
 SERVICE_NAME="gasera.service"
@@ -121,11 +122,7 @@ echo "[1/12] Update & install packages..."
 export DEBIAN_FRONTEND=noninteractive
 apt update
 apt-get -yq install isc-dhcp-server nginx python3 python3-pip python3-flask python3-waitress \
-               python3-libgpiod python3-luma.oled python3-requests git network-manager curl
-
-# Python packages (pip) required by the app
-pip3 install --no-cache-dir --upgrade pip
-pip3 install --no-cache-dir smbus2
+               python3-libgpiod python3-luma.oled python3-requests python3-smbus2 git network-manager curl
 
 # Remove brltty if installed (conflicts with USB-serial)
 if dpkg -l | grep -q '^ii  brltty'; then
@@ -311,9 +308,21 @@ echo "[6/12] 🧾 Generating version info..."
 runuser -u "$USER" -- "$APP_DIR/install/gen_version.sh"
 
 # --------------------------------------------------------------
-# 7. Install systemd service for app
+# 7a. Install simulator service for app
 # --------------------------------------------------------------
-echo "[7/12] Install systemd service for app..."
+echo "[7a/12] Install simulator service for testing..."
+if [[ -x "$APP_DIR/sim/install_simulator.sh" ]]; then
+    "$APP_DIR/sim/install_simulator.sh" || \
+        echo "⚠️  Simulator service installation failed or skipped. Continuing deploy."
+else
+    echo "install_simulator.sh not found or not executable!"
+    echo "Make sure it's included with your deployment package."
+fi
+
+# --------------------------------------------------------------
+# 7b. Install systemd service for app
+# --------------------------------------------------------------
+echo "[7b/12] Install systemd service for app..."
 cp "$APP_DIR/install/gasera.service" /etc/systemd/system/gasera.service
 systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"
@@ -341,8 +350,10 @@ USB_LOGS_DIR="$USB_MOUNT/logs"
 
 mkdir -p "$USB_MOUNT"
 
-# If the USB is mounted, fix permissions
-if mountpoint -q "$USB_MOUNT"; then
+# Detect real removable USB disk (sdX with RM=1)
+USB_DISK="$(lsblk -nr -o NAME,RM,TYPE | awk '$2==1 && $3=="disk" {print "/dev/"$1; exit}')"
+
+if [[ -n "$USB_DISK" ]]; then
   echo "🔧 USB drive detected at $USB_MOUNT — applying permissions..."
   mkdir -p "$USB_LOGS_DIR"
 
@@ -551,25 +562,6 @@ if [[ "${ans:-}" =~ ^[Yy]$ ]]; then
     fi
 else
     echo "Skipped SD card tweaks. You can run ./sd_life_tweaks.sh later."
-fi
-
-# 3. offer simulator service install
-echo
-echo "------------------------------------------------------------"
-echo "You can install a simulator service for testing purposes."
-echo "This service simulates a Gasera device responding to ASTS commands."
-echo "------------------------------------------------------------"
-read -r -p "Install simulator service now? [y/N] " ans_sim
-if [[ "${ans_sim:-}" =~ ^[Yy]$ ]]; then
-    if [[ -x "$APP_DIR/sim/install_simulator.sh" ]]; then
-        "$APP_DIR/sim/install_simulator.sh" || \
-            echo "⚠️  Simulator service installation failed or skipped. Continuing deploy."
-    else
-        echo "install_simulator.sh not found or not executable!"
-        echo "Make sure it's included with your deployment package."
-    fi
-else
-    echo "Skipped simulator service installation."
 fi
 
 echo "🚀 Deployment finished."

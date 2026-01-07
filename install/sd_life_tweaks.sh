@@ -191,12 +191,12 @@ sed -i '/^[^#].*\s\/tmp\s\+tmpfs/d' /etc/fstab
 sed -i '/^[^#].*\s\/var\/tmp\s\+tmpfs/d' /etc/fstab
 sed -i '/^[^#].*\s\/var\/log\s\+tmpfs/d' /etc/fstab
 
-ensure_fstab_entry "tmpfs /var/log  tmpfs defaults,noatime,nodiratime,mode=0755,size=50m 0 0"
-ensure_fstab_entry "tmpfs /tmp      tmpfs defaults,noatime,nodiratime,mode=1777,size=100m 0 0"
-ensure_fstab_entry "tmpfs /var/tmp  tmpfs defaults,noatime,nodiratime,mode=1777,size=100m 0 0"
-append_undo "run \"sed -i '/tmpfs \\/var\\/log  tmpfs defaults,noatime,nodiratime,mode=0755,size=50m 0 0/d' /etc/fstab\""
-append_undo "run \"sed -i '/tmpfs \\/tmp      tmpfs defaults,noatime,nodiratime,mode=1777,size=100m 0 0/d' /etc/fstab\""
-append_undo "run \"sed -i '/tmpfs \\/var\\/tmp  tmpfs defaults,noatime,nodiratime,mode=1777,size=100m 0 0/d' /etc/fstab\""
+ensure_fstab_entry "tmpfs /var/log  tmpfs defaults,noatime,nodiratime,mode=0755,size=100m 0 0"
+ensure_fstab_entry "tmpfs /tmp      tmpfs defaults,noatime,nodiratime,mode=1777,size=512m 0 0"
+ensure_fstab_entry "tmpfs /var/tmp  tmpfs defaults,noatime,nodiratime,mode=1777,size=512m 0 0"
+append_undo "run \"sed -i '/tmpfs \\/var\\/log  tmpfs defaults,noatime,nodiratime,mode=0755,size=100m 0 0/d' /etc/fstab\""
+append_undo "run \"sed -i '/tmpfs \\/tmp      tmpfs defaults,noatime,nodiratime,mode=1777,size=512m 0 0/d' /etc/fstab\""
+append_undo "run \"sed -i '/tmpfs \\/var\\/tmp  tmpfs defaults,noatime,nodiratime,mode=1777,size=512m 0 0/d' /etc/fstab\""
 
 run "mkdir -p /var/log /tmp /var/tmp"
 run "chmod 0755 /var/log; chmod 1777 /tmp /var/tmp"
