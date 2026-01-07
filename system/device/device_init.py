@@ -1,12 +1,11 @@
 # device/device_init.py
 from system.device.device_profile import DEVICE, Device
-from system.gpio.pin_assignments import select_profile
 from system import services
 from system.log_utils import info, debug
 
-
 def init_device():
     if DEVICE in (Device.MUX, Device.MOTOR):
+        from system.gpio.pin_assignments import select_profile
         select_profile(DEVICE)
         info(f"[DEVICE] Initialized {DEVICE.name} hardware profile")
     else:
@@ -78,23 +77,76 @@ def init_gasera_controller():
     from gasera.controller import GaseraController
     services.gasera_controller = GaseraController(services.tcp_client)
 
+def init_motor_controller():
+    from system.motor.motor_control import MotorController
+    from system.motor.bank import MotorBank
+    from system.motor.gpio_motor import GPIOMotor
+    from system.gpio import pin_assignments as PINS
+
+    motors = MotorBank({
+        "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
+        "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
+    })
+
+    services.motor_controller = MotorController(motors)
 
 def init_trigger_monitor():
     from gasera.trigger_monitor import TriggerMonitor
     services.trigger_monitor = TriggerMonitor(services.engine_service)
     services.trigger_monitor.start()
 
+def init_button_monitor():
+    from system.motor.button_monitor import MotorButtonMonitor
+    from system.gpio import pin_assignments as PINS
 
+    button_monitor = MotorButtonMonitor(
+        motor_ctrl=services.motor_controller,
+        pin_map={
+            "M0_CW":  (PINS.BOARD_IN1_PIN, ("0", "cw")),
+            "M0_CCW": (PINS.BOARD_IN2_PIN, ("0", "ccw")),
+            "M1_CW":  (PINS.BOARD_IN3_PIN, ("1", "cw")),
+            "M1_CCW": (PINS.BOARD_IN4_PIN, ("1", "ccw")),
+        },
+        debounce_ms=200,
+    )
+    button_monitor.start()
+    
 def init_engine():
     if DEVICE == Device.MUX:
-        from gasera.composition.mux import build_engine
+        from gasera.acquisition.mux import MuxAcquisitionEngine
+        from gasera.motion.mux_motion import MuxMotion
+        from system.mux.mux_gpio import GPIOMux
+        from system.mux.mux_vici_uma import ViciUMAMux
+        from system.mux.cascaded_mux import CascadedMux
+        from system.gpio import pin_assignments as PINS
+        
+        serial_port1 = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A90KFA3G-if00-port0"
+        serial_port2 = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9C7BUGI-if00-port0"
+
+        cmux_gpio = CascadedMux(
+            GPIOMux(home_pin=PINS.OC5_PIN, next_pin=PINS.OC4_PIN),
+            GPIOMux(home_pin=PINS.OC2_PIN, next_pin=PINS.OC1_PIN),
+        )
+
+        cmux_serial = CascadedMux(
+            ViciUMAMux(serial_port1),
+            ViciUMAMux(serial_port2),
+        )
+
+        motion = MuxMotion(cmux_gpio=cmux_gpio, cmux_serial=cmux_serial)
+
+        services.engine_service = MuxAcquisitionEngine(motion)
     elif DEVICE == Device.MOTOR:
-        from gasera.composition.motor import build_engine
+        from gasera.acquisition.motor import MotorAcquisitionEngine
+        from gasera.motion.motor_motion import MotorMotion
+        
+        init_motor_controller()
+        init_button_monitor()
+        motion = MotorMotion(services.motor_controller)
+        services.engine_service = MotorAcquisitionEngine(motion)
     else:
         raise RuntimeError("Unsupported device")
-
-    services.engine_service = build_engine()
-
+    
 
 def init_live_status_service():
     from gasera.sse.live_status_service import LiveStatusService
