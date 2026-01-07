@@ -2,7 +2,6 @@
 from gasera.motion.actions import MotionActions
 from system.device.device_profile import DEVICE, Device
 from system import services
-from gasera.motion.iface import MotionInterface
 from system.log_utils import info, debug
 
 def init_device():
@@ -79,19 +78,6 @@ def init_gasera_controller():
     from gasera.controller import GaseraController
     services.gasera_controller = GaseraController(services.tcp_client)
 
-def init_motor_controller():
-    from system.motor.motor_control import MotorController
-    from system.motor.bank import MotorBank
-    from system.motor.gpio_motor import GPIOMotor
-    from system.gpio import pin_assignments as PINS
-
-    motors = MotorBank({
-        "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
-        "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
-    })
-
-    services.motor_controller = MotorController(motors)
-
 def init_motion_buttons():
     from system.input.button import InputButton
     from system.gpio import pin_assignments as PINS
@@ -159,18 +145,29 @@ def init_engine():
         from gasera.motion.mux_motion import MuxMotion
 
         motion = MuxMotion()
-        services.motion_actions = {"0": MotionActions(motion, unit_id=None)}
-        services.engine_service = MuxAcquisitionEngine(motion)
-    elif DEVICE == Device.MOTOR:
-        from gasera.acquisition.motor import MotorAcquisitionEngine
-        from gasera.motion.motor_motion import MotorMotion
-        
-        init_motor_controller()
-        motion = MotorMotion(services.motor_controller)
         services.motion_actions = {
             "0": MotionActions(motion, unit_id="0"),
             "1": MotionActions(motion, unit_id="1"),
         }
+        services.engine_service = MuxAcquisitionEngine(motion)
+    elif DEVICE == Device.MOTOR:
+        from system.gpio import pin_assignments as PINS
+        from system.motor.gpio_motor import GPIOMotor
+
+        motors = dict({
+            "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
+            "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
+        })
+        
+        from gasera.motion.motor_motion import MotorMotion
+        motion = MotorMotion(motors)
+        services.motion_actions = {
+            "0": MotionActions(motion, unit_id="0"),
+            "1": MotionActions(motion, unit_id="1"),
+        }
+        
+        from gasera.acquisition.motor import MotorAcquisitionEngine
+        services.motion_service = motion
         services.engine_service = MotorAcquisitionEngine(motion)
         init_motion_buttons()
     else:

@@ -9,14 +9,14 @@ class MotorStatusService:
     """Provides motor status snapshots for SSE consumers."""
 
     def get_motor_snapshots(self) -> Dict[str, Any] | None:
-        motor = getattr(services, "motor_controller", None)
-        if motor is None:
+        motion = services.motion_service
+        if motion is None:
             return None
 
         try:
             return {
-                "0": motor.state("0"),
-                "1": motor.state("1"),
+                "0": motion.state("0"),
+                "1": motion.state("1"),
             }
         except Exception:
             return {"error": True}

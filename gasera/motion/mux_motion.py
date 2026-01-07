@@ -3,6 +3,7 @@ from system.mux.cascaded_mux import CascadedMux
 from system.mux.mux_gpio import GPIOMux
 from system.mux.mux_vici_uma import ViciUMAMux
 from system.gpio import pin_assignments as PINS
+from system.log_utils import debug
 
 class MuxMotion:
     def __init__(self):
@@ -18,14 +19,24 @@ class MuxMotion:
             ViciUMAMux(serial_port1),
             ViciUMAMux(serial_port2),
         )
+        
+        self._state = {"status": "idle", "action": None}
 
     def home(self, unit_id=None):
         self.cmux_gpio.home()
         self.cmux_serial.home()
+        debug("[MUX] Homing both muxes.")
+        self._state = {"status": "moving", "action": "home"}
 
     def step(self, unit_id=None):
         self.cmux_gpio.select_next()
         self.cmux_serial.select_next()
+        debug("[MUX] Stepping both muxes.")
+        self._state = {"status": "moving", "action": "step"}
     
     def reset(self, unit_id=None):
-        pass  # No action needed to stop mux motion
+        self._state = {"status": "idle", "action": "reset"}
+        debug("[MUX] Resetting mux motion state.")
+    
+    def state(self, unit_id):
+        return self._state

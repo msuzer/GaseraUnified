@@ -1,15 +1,29 @@
 # motion/motor_motion.py
-from system.motor.motor_control import MotorController
+from system.log_utils import debug
+from system.motor.gpio_motor import GPIOMotor
 
 class MotorMotion:
-    def __init__(self, mc: MotorController=None):
-        self.mc = mc
-    
-    def home(self, unit_id):
-        self.mc.start(unit_id, "ccw", enable_timeout=True)
+    def __init__(self, motors: dict[str, GPIOMotor]):
+        self.motors = motors
+        self._state = {
+            mid: {"status": "idle", "action": None}
+            for mid in motors
+        }
 
-    def step(self, unit_id):
-        self.mc.start(unit_id, "cw", enable_timeout=False)
-    
-    def reset(self, unit_id):
-        self.mc.stop(unit_id)
+    def home(self, motor_id):
+        self.motors[motor_id].move_backward()
+        self._state[motor_id] = {"status": "moving", "action": "home"}
+        debug(f"[MOTOR] Homing motor {motor_id}.")
+
+    def step(self, motor_id):
+        self.motors[motor_id].move_forward()
+        self._state[motor_id] = {"status": "moving", "action": "step"}
+        debug(f"[MOTOR] Stepping motor {motor_id}.")
+
+    def reset(self, motor_id):
+        self.motors[motor_id].stop()
+        debug(f"[MOTOR] Resetting motor {motor_id}.")
+        self._state[motor_id] = {"status": "idle", "action": "reset"}
+
+    def state(self, motor_id):
+        return self._state[motor_id]

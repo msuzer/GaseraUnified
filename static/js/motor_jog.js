@@ -27,14 +27,14 @@ function motionResetBoth() {
 function attachJogButtons() {
   document.querySelectorAll("#motor-jog-card button[data-motor]").forEach(btn => {
     const motorId = btn.dataset.motor;
-    const direction = btn.dataset.dir;
+    const action = btn.dataset.action;
 
     btn.addEventListener("pointerdown", e => {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
       btn.setPointerCapture?.(e.pointerId);
 
-      if (direction === "cw") {
+      if (action === "step") {
         motionStep(motorId);
       } else {
         motionHome(motorId);
@@ -49,27 +49,27 @@ function attachJogButtons() {
   /* --------------------------------------------------
    * BOTH motors jog buttons (new)
    * -------------------------------------------------- */
-  const bothCW = document.getElementById("btn-both-cw");
-  const bothCCW = document.getElementById("btn-both-ccw");
+  const bothStep = document.getElementById("btn-both-step");
+  const bothHome = document.getElementById("btn-both-home");
 
-  if (bothCW && bothCCW) {
-    bothCW.addEventListener("pointerdown", e => {
+  if (bothStep && bothHome) {
+    bothStep.addEventListener("pointerdown", e => {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
-      bothCW.setPointerCapture?.(e.pointerId);
+      bothStep.setPointerCapture?.(e.pointerId);
       motionStepBoth();
     });
 
-    bothCCW.addEventListener("pointerdown", e => {
+    bothHome.addEventListener("pointerdown", e => {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
-      bothCCW.setPointerCapture?.(e.pointerId);
+      bothHome.setPointerCapture?.(e.pointerId);
       motionHomeBoth();
     });
 
     ["pointerup", "pointercancel"].forEach(ev => {
-      bothCW.addEventListener(ev, () => motionResetBoth());
-      bothCCW.addEventListener(ev, () => motionResetBoth());
+      bothStep.addEventListener(ev, () => motionResetBoth());
+      bothHome.addEventListener(ev, () => motionResetBoth());
     });
   }
 
@@ -107,9 +107,9 @@ function updateMotorBadge(motorId, state) {
 
   el.className = "badge " + motorStatusClass(state.status || "unknown");
 
-  if (state.direction) {
+  if (state.action) {
     el.textContent =
-      `${state.status.toUpperCase()} ${state.direction.toUpperCase()}`;
+      `${state.status.toUpperCase()} ${state.action.toUpperCase()}`;
   } else {
     el.textContent = state.status.toUpperCase();
   }
