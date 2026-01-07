@@ -26,3 +26,30 @@ def motion_reset(unit_id):
         return jsonify({"ok": True})
     except KeyError:
         return jsonify({"error": "Invalid unit"}), 404
+
+@motion_bp.post("/home/both")
+def motion_home_both():
+    try:
+        services.motion_actions["0"].home()
+        services.motion_actions["1"].home()
+        return jsonify({"ok": True})
+    except KeyError:
+        return jsonify({"error": "Invalid unit"}), 404
+
+@motion_bp.post("/step/both")
+def motion_step_both():
+    try:
+        services.motion_actions["0"].step()
+        services.motion_actions["1"].step()
+        return jsonify({"ok": True})
+    except KeyError:
+        return jsonify({"error": "Invalid unit"}), 404
+
+@motion_bp.post("/reset/both")
+def motion_reset_both():
+    try:
+        services.motion_actions["0"].reset()
+        services.motion_actions["1"].reset()
+        return jsonify({"ok": True})
+    except KeyError:
+        return jsonify({"error": "Invalid unit"}), 404

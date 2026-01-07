@@ -31,7 +31,10 @@ API_PATHS = {
         "status": "/motion/status",
         "home": "/motion/home/",
         "step": "/motion/step/",
-        "reset": "/motion/reset/"
+        "reset": "/motion/reset/",
+        "home_both": "/motion/home/both",
+        "step_both": "/motion/step/both",
+        "reset_both": "/motion/reset/both"
     },
     // UI / device management routes (local LAN admin UI)
     "ui": {

@@ -12,6 +12,18 @@ function motionReset(unitId) {
   return safeFetch(`${API_PATHS.motion.reset}${unitId}`, { method: "POST" });
 }
 
+function motionStepBoth() {
+  return safeFetch(`${API_PATHS.motion.step_both}`, { method: "POST" });
+}
+
+function motionHomeBoth() {
+  return safeFetch(`${API_PATHS.motion.home_both}`, { method: "POST" });
+}
+
+function motionResetBoth() {
+  return safeFetch(`${API_PATHS.motion.reset_both}`, { method: "POST" });
+}
+
 function attachJogButtons() {
   document.querySelectorAll("#motor-jog-card button[data-motor]").forEach(btn => {
     const motorId = btn.dataset.motor;
@@ -45,31 +57,29 @@ function attachJogButtons() {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
       bothCW.setPointerCapture?.(e.pointerId);
-      // motorJogBoth("start", "cw");
+      motionStepBoth();
     });
 
     bothCCW.addEventListener("pointerdown", e => {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
       bothCCW.setPointerCapture?.(e.pointerId);
-      // motorJogBoth("start", "ccw");
+      motionHomeBoth();
     });
 
     ["pointerup", "pointercancel"].forEach(ev => {
-      // bothCW.addEventListener(ev, () => motorJogBoth("stop"));
-      // bothCCW.addEventListener(ev, () => motorJogBoth("stop"));
+      bothCW.addEventListener(ev, () => motionResetBoth());
+      bothCCW.addEventListener(ev, () => motionResetBoth());
     });
   }
 
   window.addEventListener("blur", () => {
-    // stopJog();
-    // motorJogBoth("stop").catch(() => { });
+    motionResetBoth().catch(() => { });
   });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      // stopJog();
-      // motorJogBoth("stop").catch(() => { });
+      motionResetBoth().catch(() => { });
     }
   });
 }
