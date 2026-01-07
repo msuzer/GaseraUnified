@@ -1,6 +1,8 @@
 # device/device_init.py
+from gasera.motion.actions import MotionActions
 from system.device.device_profile import DEVICE, Device
 from system import services
+from gasera.motion.iface import MotionInterface
 from system.log_utils import info, debug
 
 def init_device():
@@ -90,23 +92,9 @@ def init_motor_controller():
 
     services.motor_controller = MotorController(motors)
 
-def init_motion_actions():
-    from gasera.motion.motor_motion import MotorMotion
-    from gasera.motion.actions import MotionActions
-
-    motion = MotorMotion(services.motor_controller)
-    
-    services.motion_actions = {
-        "0": MotionActions(motion, unit_id="0"),
-        "1": MotionActions(motion, unit_id="1"),
-    }
-    
-def init_motor_buttons():
+def init_motion_buttons():
     from system.input.button import InputButton
-    from gasera.motion.actions import MotionActions
     from system.gpio import pin_assignments as PINS
-
-    init_motion_actions()
 
     # Motion binding
     actions_m0: MotionActions = services.motion_actions["0"]
@@ -161,26 +149,34 @@ def init_trigger():
 
     trigger_btn.start()
 
+def init_engine_actions():
+    from gasera.acquisition.actions import EngineActions
+    services.engine_actions = EngineActions(services.engine_service)
+
 def init_engine():
     if DEVICE == Device.MUX:
         from gasera.acquisition.mux import MuxAcquisitionEngine
         from gasera.motion.mux_motion import MuxMotion
 
         motion = MuxMotion()
+        services.motion_actions = {"0": MotionActions(motion, unit_id=None)}
         services.engine_service = MuxAcquisitionEngine(motion)
     elif DEVICE == Device.MOTOR:
         from gasera.acquisition.motor import MotorAcquisitionEngine
         from gasera.motion.motor_motion import MotorMotion
         
         init_motor_controller()
-        init_motor_buttons()
         motion = MotorMotion(services.motor_controller)
+        services.motion_actions = {
+            "0": MotionActions(motion, unit_id="0"),
+            "1": MotionActions(motion, unit_id="1"),
+        }
         services.engine_service = MotorAcquisitionEngine(motion)
+        init_motion_buttons()
     else:
         raise RuntimeError("Unsupported device")
-    
-    from gasera.acquisition.actions import EngineActions
-    services.engine_actions = EngineActions(services.engine_service)
+
+    init_engine_actions()
     init_trigger()
 
 def init_live_status_service():

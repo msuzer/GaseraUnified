@@ -114,28 +114,28 @@
     </div>
   </div>
 
-  <div class="card mb-3 d-none" id="motor-jog-card">
-    <div class="card-header">Motor Jog (Manual Control)</div>
+  <div class="card mb-3" id="motor-jog-card">
+    <div class="card-header">Motion Manual Control</div>
     <div class="card-body">
 
       <div class="row g-3">
-        <!-- Motor 0 -->
+        <!-- Channel 0 -->
         <div class="col-md-6">
-          <h6>Motor 0</h6>
+          <h6>Channel 0</h6>
           <span id="status-0" class="badge bg-secondary mb-2">—</span>
           <div class="btn-group w-100">
-            <button class="btn btn-primary" data-motor="0" data-dir="cw">CW</button>
-            <button class="btn btn-secondary" data-motor="0" data-dir="ccw">CCW</button>
+            <button class="btn btn-primary" data-motor="0" data-dir="cw">Step</button>
+            <button class="btn btn-secondary" data-motor="0" data-dir="ccw">Home</button>
           </div>
         </div>
 
-        <!-- Motor 1 -->
+        <!-- Channel 1 -->
         <div class="col-md-6">
-          <h6>Motor 1</h6>
+          <h6>Channel 1</h6>
           <span id="status-1" class="badge bg-secondary mb-2">—</span>
           <div class="btn-group w-100">
-            <button class="btn btn-primary" data-motor="1" data-dir="cw">CW</button>
-            <button class="btn btn-secondary" data-motor="1" data-dir="ccw">CCW</button>
+            <button class="btn btn-primary" data-motor="1" data-dir="cw">Step</button>
+            <button class="btn btn-secondary" data-motor="1" data-dir="ccw">Home</button>
           </div>
         </div>
       </div>
@@ -143,10 +143,10 @@
       <hr>
 
       <div>
-        <h6>Both Motors</h6>
+        <h6>Both Channels</h6>
         <div class="btn-group w-100">
-          <button class="btn btn-outline-primary" id="btn-both-cw">CW</button>
-          <button class="btn btn-outline-secondary" id="btn-both-ccw">CCW</button>
+          <button class="btn btn-outline-primary" id="btn-both-cw">Step</button>
+          <button class="btn btn-outline-secondary" id="btn-both-ccw">Home</button>
         </div>
       </div>
 

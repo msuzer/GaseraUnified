@@ -37,7 +37,7 @@ window.switchToMotorMode = function () {
     window.UI_CAPS.motor = true;
     window.UI_CAPS.mux = false;
     showElement("motor-rover-card");        // motor+rover
-    showElement("motor-jog-card");          // actuator
+    // showElement("motor-jog-card");          // actuator
     showElement("motor-timeout-block");     // actuator
     showElement("btnRepeat");               // actuator
     showElement("btnFinish");               // actuator
@@ -50,7 +50,7 @@ window.switchToMuxMode = function () {
     window.UI_CAPS.motor = false;
     window.UI_CAPS.mux = true;
     hideElement("motor-rover-card");
-    hideElement("motor-jog-card");
+    // hideElement("motor-jog-card");
     hideElement("motor-timeout-block");
     hideElement("btnRepeat");
     hideElement("btnFinish");
