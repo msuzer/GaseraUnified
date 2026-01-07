@@ -2,6 +2,6 @@ from enum import Enum
 
 class Device(Enum):
     MUX = "mux"
-    WEBUI = "webui"
+    MOTOR = "motor"
 
 DEVICE = Device.@DEVICE@
