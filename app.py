@@ -68,7 +68,6 @@ services.display_controller.show(
 from system.routes import system_bp
 from gasera.routes import gasera_bp
 from settings.routes import settings_bp
-from system.motor.routes import motor_bp
 from gasera.motion.routes import motion_bp
 
 app = Flask(__name__)
@@ -76,7 +75,6 @@ app = Flask(__name__)
 app.register_blueprint(gasera_bp, url_prefix="/gasera")
 app.register_blueprint(system_bp, url_prefix="/system")
 app.register_blueprint(settings_bp, url_prefix="/settings")
-app.register_blueprint(motor_bp, url_prefix="/motor")
 app.register_blueprint(motion_bp, url_prefix="/motion")
 
 @app.route('/')

@@ -1,51 +1,15 @@
 // static/js/motor_jog.js
 
-let activeJog = null;
-let bothJogActive = false;
-
-function motorJogBoth(action, direction = null) {
-  if (bothJogActive && action === "start") {
-    // Already jogging both motors
-    return Promise.resolve({ status: "already_jogging" });
-  } else if (!bothJogActive && action === "stop") {
-    // Both motors not jogging
-    return Promise.resolve({ status: "not_jogging" });
-  }
-
-  let body = direction ? `direction=${direction}` : "";
-  return safeFetch(`${API_PATHS.motor.jog_both}${action}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  }).then(r => {
-    bothJogActive = action === "start";
-    return r.json()
-  });
+function motionStep(unitId) {
+  return safeFetch(`${API_PATHS.motion.step}${unitId}`, { method: "POST" });
 }
 
-function motorJog(action, motorId, direction) {
-  if (activeJog && action === "start") return Promise.resolve();
-  if (!activeJog && action === "stop") return Promise.resolve();
-
-  return safeFetch(`${API_PATHS.motor.jog}${action}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `motor_id=${motorId}&direction=${direction}`
-  }).then(r => {
-    activeJog = action === "start" ? { motorId, direction } : null;  
-    return r.json()
-  });
+function motionHome(unitId) {
+  return safeFetch(`${API_PATHS.motion.home}${unitId}`, { method: "POST" });
 }
 
-
-function stopJog() {
-  if (!activeJog) return;
-  const { motorId, direction } = activeJog;
-  motorJog("stop", motorId, direction).catch(console.error);
-}
-
-function startJog(motorId, direction) {
-  motorJog("start", motorId, direction).catch(() => {});
+function motionReset(unitId) {
+  return safeFetch(`${API_PATHS.motion.reset}${unitId}`, { method: "POST" });
 }
 
 function attachJogButtons() {
@@ -57,11 +21,16 @@ function attachJogButtons() {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
       btn.setPointerCapture?.(e.pointerId);
-      startJog(motorId, direction);
+
+      if (direction === "cw") {
+        motionStep(motorId);
+      } else {
+        motionHome(motorId);
+      }
     });
 
     ["pointerup", "pointercancel"].forEach(ev =>
-      btn.addEventListener(ev, stopJog)
+      btn.addEventListener(ev, () => motionReset(motorId))
     );
   });
 
@@ -76,31 +45,31 @@ function attachJogButtons() {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
       bothCW.setPointerCapture?.(e.pointerId);
-      motorJogBoth("start", "cw");
+      // motorJogBoth("start", "cw");
     });
 
     bothCCW.addEventListener("pointerdown", e => {
       e.preventDefault();
       // Ensure we receive pointerup even if finger leaves the button
       bothCCW.setPointerCapture?.(e.pointerId);
-      motorJogBoth("start", "ccw");
+      // motorJogBoth("start", "ccw");
     });
 
     ["pointerup", "pointercancel"].forEach(ev => {
-      bothCW.addEventListener(ev, () => motorJogBoth("stop"));
-      bothCCW.addEventListener(ev, () => motorJogBoth("stop"));
+      // bothCW.addEventListener(ev, () => motorJogBoth("stop"));
+      // bothCCW.addEventListener(ev, () => motorJogBoth("stop"));
     });
   }
 
   window.addEventListener("blur", () => {
-    stopJog();
-    motorJogBoth("stop").catch(() => {});
+    // stopJog();
+    // motorJogBoth("stop").catch(() => { });
   });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      stopJog();
-      motorJogBoth("stop").catch(() => {});
+      // stopJog();
+      // motorJogBoth("stop").catch(() => { });
     }
   });
 }

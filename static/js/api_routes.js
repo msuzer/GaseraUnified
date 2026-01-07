@@ -27,10 +27,11 @@ API_PATHS = {
     "gasera": {
         "gas_colors": "/gasera/api/gas_colors"
     },
-    "motor" : {
-        "status": "/motor/status",
-        "jog": "/motor/jog/",
-        "jog_both": "/motor/jog/both/"
+    "motion" : {
+        "status": "/motion/status",
+        "home": "/motion/home/",
+        "step": "/motion/step/",
+        "reset": "/motion/reset/"
     },
     // UI / device management routes (local LAN admin UI)
     "ui": {
