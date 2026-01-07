@@ -74,7 +74,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         return True, "ok"
 
-    def _can_finish_now(self) -> bool:
+    def can_finish_now(self) -> bool:
         info("[ENGINE] checking armed state within motor engine")
         return self._armed_waiting_for_repeat
 

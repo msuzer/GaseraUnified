@@ -170,7 +170,7 @@ class BaseAcquisitionEngine(ABC):
 
     def finish(self) -> tuple[bool, str]:
         # Gracefully finish the current task.
-        if not self._can_finish_now():
+        if not self.can_finish_now():
             return False, "Finish not allowed in current state"
 
         self._finish_event.set()
@@ -186,7 +186,7 @@ class BaseAcquisitionEngine(ABC):
     def is_running(self) -> bool:
         return bool(self._worker) and self._worker.is_alive()
 
-    def _can_finish_now(self) -> bool:
+    def can_finish_now(self) -> bool:
         # motor will override
         info("[ENGINE] not supported by this engine")
         return False

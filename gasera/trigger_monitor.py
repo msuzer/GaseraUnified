@@ -3,7 +3,7 @@ import threading
 from gasera.acquisition.base import BaseAcquisitionEngine as AcquisitionEngine
 from gasera.acquisition.motor import MotorAcquisitionEngine
 from gasera.acquisition.mux import MuxAcquisitionEngine
-from system.log_utils import error, verbose, warn, debug
+from system.log_utils import error, verbose, warn, debug, info
 from system import services
 from system.gpio import pin_assignments as PINS
 
@@ -120,7 +120,7 @@ class TriggerMonitor:
     # ------------------------------------------------------------------
     def _handle_short_press(self):
         try:
-            debug("[TRIGGER] Short press → Repeat measurement")
+            info("[TRIGGER] Short press → Repeat measurement")
             ok, msg = self.engine.trigger_repeat()
             if not ok:
                 warn(f"[TRIGGER] Repeat rejected: {msg}")
@@ -131,12 +131,18 @@ class TriggerMonitor:
         if self.engine.is_running():
             try:
                 if isinstance(self.engine, MotorAcquisitionEngine):
-                    debug("[TRIGGER] Long press → Finish measurement")
-                    ok, msg = self.engine.finish()
-                    if not ok:
-                        warn(f"[TRIGGER] Finish rejected: {msg}")
+                    if self.engine.can_finish_now():
+                        info("[TRIGGER] Long press → Finish measurement")
+                        ok, msg = self.engine.finish()
+                        if not ok:
+                            warn(f"[TRIGGER] Finish rejected: {msg}")
+                    else:
+                        info("[TRIGGER] Long press → Abort measurement")
+                        ok, msg = self.engine.abort()
+                        if not ok:
+                            warn(f"[TRIGGER] Abort rejected: {msg}")
                 elif isinstance(self.engine, MuxAcquisitionEngine):
-                    debug("[TRIGGER] Long press → Abort measurement")
+                    info("[TRIGGER] Long press → Abort measurement")
                     ok, msg = self.engine.abort()
                     if not ok:
                         warn(f"[TRIGGER] Abort rejected: {msg}")
@@ -146,7 +152,7 @@ class TriggerMonitor:
                 warn(f"[TRIGGER] Abort error: {e}")
         else:
             try:
-                debug("[TRIGGER] Long press → Start measurement")
+                info("[TRIGGER] Long press → Start measurement")
                 ok, msg = self.engine.start()
                 if not ok:
                     warn(f"[TRIGGER] Start rejected: {msg}")
