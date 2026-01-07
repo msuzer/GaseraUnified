@@ -4,7 +4,7 @@
   "motor_timeout": 60,
   "repeat_count": 1,
   "buzzer_enabled": true,
-  "simulator_enabled": false,
+  "simulator_enabled": true,
   "online_mode_enabled": true,
   "measurement_start_mode": "per_cycle",
   "include_channels": [

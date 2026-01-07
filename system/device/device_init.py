@@ -12,7 +12,7 @@ def init_device():
         raise RuntimeError(f"Unsupported device: {DEVICE}")
 
     from system.gpio import pin_assignments as PINS
-    info(f"[DEVICE] BUZZER_PIN resolved to {PINS.BUZZER_PIN}")
+    debug(f"[DEVICE] BUZZER_PIN resolved to {PINS.BUZZER_PIN}")
 
 
 def init_gpio_service():
