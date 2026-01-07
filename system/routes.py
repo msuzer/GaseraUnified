@@ -7,39 +7,9 @@ from system.log_utils import debug, info, warn, error
 from system import services
 from system.services import engine_service as engine
 
-from system.preferences import (
-    KEY_INCLUDE_CHANNELS,
-    KEY_MEASUREMENT_DURATION,
-    KEY_PAUSE_SECONDS,
-    KEY_REPEAT_COUNT,
-    KEY_BUZZER_ENABLED,
-    KEY_ONLINE_MODE_ENABLED,
-    KEY_TRACK_VISIBILITY)
+from system.preferences import DEFAULTS, KEY_BUZZER_ENABLED
 
 system_bp = Blueprint("system", __name__)
-
-# Unified default values
-DEFAULTS = {
-    KEY_MEASUREMENT_DURATION    : 300,
-    KEY_PAUSE_SECONDS           : 300,
-    KEY_REPEAT_COUNT            : 1,
-    KEY_BUZZER_ENABLED          : True,
-    KEY_ONLINE_MODE_ENABLED     : True,
-    KEY_INCLUDE_CHANNELS        : [True] * services.preferences_service.DEFAULT_INCLUDE_COUNT,
-    KEY_TRACK_VISIBILITY        : {
-        "Acetaldehyde (CH\u2083CHO)": True,
-        "Ammonia (NH\u2083)": True,
-        "Carbon Dioxide (CO\u2082)": False,
-        "Carbon Monoxide (CO)": True,
-        "Ethanol (C\u2082H\u2085OH)": True,
-        "Methane (CH\u2084)": True,
-        "Methanol (CH\u2083OH)": True,
-        "Nitrous Oxide (N\u2082O)": True,
-        "Oxygen (O\u2082)": False,
-        "Sulfur Dioxide (SO\u2082)": True,
-        "Water Vapor (H\u2082O)": False
-    },
-}
 
 # ----------------------------------------------------------------------
 # Version info endpoint

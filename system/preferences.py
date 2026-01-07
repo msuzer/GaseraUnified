@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List
+from gasera.acquisition.base import MeasurementStartMode
 from system.log_utils import debug, warn, error
 
 # --- Channel State Constants ---
@@ -35,13 +36,39 @@ KEY_SIMULATOR_ENABLED       = VALID_PREF_KEYS[7]
 KEY_MOTOR_TIMEOUT           = VALID_PREF_KEYS[8]
 KEY_MEASUREMENT_START_MODE  = VALID_PREF_KEYS[9]
 
+DEFAULT_INCLUDE_COUNT = 31  # default number of channels to include
+
+# Unified default values
+DEFAULTS = {
+    KEY_MEASUREMENT_DURATION    : 300,
+    KEY_PAUSE_SECONDS           : 300,
+    KEY_MOTOR_TIMEOUT           : 60,
+    KEY_REPEAT_COUNT            : 1,
+    KEY_BUZZER_ENABLED          : True,
+    KEY_ONLINE_MODE_ENABLED     : True,
+    KEY_SIMULATOR_ENABLED       : True,
+    KEY_MEASUREMENT_START_MODE  : MeasurementStartMode.PER_CYCLE,
+    KEY_INCLUDE_CHANNELS        : [True] * DEFAULT_INCLUDE_COUNT,
+    KEY_TRACK_VISIBILITY        : {
+        "Acetaldehyde (CH\u2083CHO)": True,
+        "Ammonia (NH\u2083)": True,
+        "Carbon Dioxide (CO\u2082)": False,
+        "Carbon Monoxide (CO)": True,
+        "Ethanol (C\u2082H\u2085OH)": True,
+        "Methane (CH\u2084)": True,
+        "Methanol (CH\u2083OH)": True,
+        "Nitrous Oxide (N\u2082O)": True,
+        "Oxygen (O\u2082)": False,
+        "Sulfur Dioxide (SO\u2082)": True,
+        "Water Vapor (H\u2082O)": False
+    },
+}
+
 class Preferences:
     """
     Simple JSON-based preference store with auto-initialization
     and callback support.
     """
-
-    DEFAULT_INCLUDE_COUNT = 31  # default number of channels to include
 
     def __init__(self, filename: str = "config/user_prefs.json"):
         self.file = Path(filename)
@@ -51,7 +78,7 @@ class Preferences:
 
         # Ensure include_channels mask exists
         if KEY_INCLUDE_CHANNELS not in self.data:
-            self.data[KEY_INCLUDE_CHANNELS] = [ChannelState.ACTIVE] * self.DEFAULT_INCLUDE_COUNT
+            self.data[KEY_INCLUDE_CHANNELS] = [ChannelState.ACTIVE] * DEFAULT_INCLUDE_COUNT
             self.save()
 
     # ------------------------------------------------------------------
