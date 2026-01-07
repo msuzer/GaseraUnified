@@ -1,11 +1,12 @@
 # services.py
+from gasera.acquisition.actions import EngineActions
+from gasera.motion.actions import MotionActions
 from gasera.sse.device_status_service import DeviceStatusService
 from gasera.sse.live_status_service import LiveStatusService
 from gasera.sse.motor_status_service import MotorStatusService
 from system.gpio.gpio_control import GPIOController
 from gasera.tcp_client import GaseraTCPClient
 from gasera.controller import GaseraController
-from gasera.trigger_monitor import TriggerMonitor
 from system.buzzer.buzzer_facade import BuzzerFacade
 from gasera.acquisition.base import BaseAcquisitionEngine
 from system.motor.motor_control import MotorController
@@ -32,8 +33,6 @@ engine_service: BaseAcquisitionEngine = None
 
 tcp_client: GaseraTCPClient = None
 
-trigger_monitor: TriggerMonitor = None
-
 gasera_controller: GaseraController = None
 
 preferences_service: Preferences = None
@@ -45,3 +44,7 @@ device_status_service: DeviceStatusService = None
 motor_status_service: MotorStatusService = None
  
 version_manager: VersionManager = None
+
+motion_actions: MotionActions = None
+
+engine_actions: EngineActions = None

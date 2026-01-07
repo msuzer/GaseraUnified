@@ -90,27 +90,77 @@ def init_motor_controller():
 
     services.motor_controller = MotorController(motors)
 
-def init_trigger_monitor():
-    from gasera.trigger_monitor import TriggerMonitor
-    services.trigger_monitor = TriggerMonitor(services.engine_service)
-    services.trigger_monitor.start()
+def init_motion_actions():
+    from gasera.motion.motor_motion import MotorMotion
+    from gasera.motion.actions import MotionActions
 
-def init_button_monitor():
-    from system.motor.button_monitor import MotorButtonMonitor
+    motion = MotorMotion(services.motor_controller)
+    
+    services.motion_actions = {
+        "0": MotionActions(motion, unit_id="0"),
+        "1": MotionActions(motion, unit_id="1"),
+    }
+    
+def init_motor_buttons():
+    from system.input.button import InputButton
+    from gasera.motion.actions import MotionActions
     from system.gpio import pin_assignments as PINS
 
-    button_monitor = MotorButtonMonitor(
-        motor_ctrl=services.motor_controller,
-        pin_map={
-            "M0_CW":  (PINS.BOARD_IN1_PIN, ("0", "cw")),
-            "M0_CCW": (PINS.BOARD_IN2_PIN, ("0", "ccw")),
-            "M1_CW":  (PINS.BOARD_IN3_PIN, ("1", "cw")),
-            "M1_CCW": (PINS.BOARD_IN4_PIN, ("1", "ccw")),
-        },
-        debounce_ms=200,
+    init_motion_actions()
+
+    # Motion binding
+    actions_m0: MotionActions = services.motion_actions["0"]
+    actions_m1: MotionActions = services.motion_actions["1"]
+
+    buttons = [
+        # Motor 0 CW (step)
+        InputButton(
+            pin=PINS.BOARD_IN1_PIN,
+            debounce_ms=200,
+            on_press=actions_m0.step,
+            on_release=actions_m0.reset,
+        ),
+        # Motor 0 CCW (home)
+        InputButton(
+            pin=PINS.BOARD_IN2_PIN,
+            debounce_ms=200,
+            on_press=actions_m0.home,
+            on_release=actions_m0.reset,
+        ),
+        # Motor 1 CW (step)
+        InputButton(
+            pin=PINS.BOARD_IN3_PIN,
+            debounce_ms=200,
+            on_press=actions_m1.step,
+            on_release=actions_m1.reset,
+        ),
+        # Motor 1 CCW (home)
+        InputButton(
+            pin=PINS.BOARD_IN4_PIN,
+            debounce_ms=200,
+            on_press=actions_m1.home,
+            on_release=actions_m1.reset,
+        ),
+    ]
+
+    for btn in buttons:
+        btn.start()
+
+def init_trigger():
+    from system.input.button import InputButton
+    from system.gpio import pin_assignments as PINS
+    from system import services
+
+    trigger_btn = InputButton(
+        pin=PINS.TRIGGER_PIN,
+        debounce_ms=400,
+        long_press_sec=4.0,
+        on_short_press=services.engine_actions.repeat,
+        on_long_press=services.engine_actions.long_press,
     )
-    button_monitor.start()
-    
+
+    trigger_btn.start()
+
 def init_engine():
     if DEVICE == Device.MUX:
         from gasera.acquisition.mux import MuxAcquisitionEngine
@@ -123,12 +173,15 @@ def init_engine():
         from gasera.motion.motor_motion import MotorMotion
         
         init_motor_controller()
-        init_button_monitor()
+        init_motor_buttons()
         motion = MotorMotion(services.motor_controller)
         services.engine_service = MotorAcquisitionEngine(motion)
     else:
         raise RuntimeError("Unsupported device")
     
+    from gasera.acquisition.actions import EngineActions
+    services.engine_actions = EngineActions(services.engine_service)
+    init_trigger()
 
 def init_live_status_service():
     from gasera.sse.live_status_service import LiveStatusService

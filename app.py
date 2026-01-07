@@ -55,10 +55,9 @@ init_live_display_services()
 # instantiate motor status service so `gasera.routes` sees it
 init_motor_status_service()
 
-from system.device.device_init import init_version_manager, init_trigger_monitor, start_display_thread
+from system.device.device_init import init_version_manager, start_display_thread
 # initialize version manager before importing routes that use it
 init_version_manager()
-init_trigger_monitor()
 start_display_thread()
 
 services.buzzer.play("power_on")
@@ -70,6 +69,7 @@ from system.routes import system_bp
 from gasera.routes import gasera_bp
 from settings.routes import settings_bp
 from system.motor.routes import motor_bp
+from gasera.motion.routes import motion_bp
 
 app = Flask(__name__)
 
@@ -77,6 +77,7 @@ app.register_blueprint(gasera_bp, url_prefix="/gasera")
 app.register_blueprint(system_bp, url_prefix="/system")
 app.register_blueprint(settings_bp, url_prefix="/settings")
 app.register_blueprint(motor_bp, url_prefix="/motor")
+app.register_blueprint(motion_bp, url_prefix="/motion")
 
 @app.route('/')
 def index():
