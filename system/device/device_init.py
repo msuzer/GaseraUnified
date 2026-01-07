@@ -78,7 +78,7 @@ def init_gasera_controller():
     from gasera.controller import GaseraController
     services.gasera_controller = GaseraController(services.tcp_client)
 
-def init_motion_buttons():
+def init_motor_buttons():
     from system.input.button import InputButton
     from system.gpio import pin_assignments as PINS
 
@@ -120,6 +120,33 @@ def init_motion_buttons():
     for btn in buttons:
         btn.start()
 
+def init_mux_buttons():
+    from system.input.button import InputButton
+    from system.gpio import pin_assignments as PINS
+
+    # Motion binding
+    actions_m0: MotionActions = services.motion_actions["0"]
+
+    buttons = [
+        # Cascaded Mux step
+        InputButton(
+            pin=PINS.BOARD_IN1_PIN,
+            debounce_ms=200,
+            on_press=actions_m0.step,
+            on_release=actions_m0.reset,
+        ),
+        # Cascaded Mux home
+        InputButton(
+            pin=PINS.BOARD_IN2_PIN,
+            debounce_ms=200,
+            on_press=actions_m0.home,
+            on_release=actions_m0.reset,
+        ),
+    ]
+
+    for btn in buttons:
+        btn.start()
+
 def init_trigger():
     from system.input.button import InputButton
     from system.gpio import pin_assignments as PINS
@@ -141,26 +168,18 @@ def init_engine_actions():
 
 def init_engine():
     if DEVICE == Device.MUX:
-        from gasera.acquisition.mux import MuxAcquisitionEngine
         from gasera.motion.mux_motion import MuxMotion
-
         motion = MuxMotion()
         services.motion_actions = {
             "0": MotionActions(motion, unit_id="0"),
             "1": MotionActions(motion, unit_id="1"),
         }
+        from gasera.acquisition.mux import MuxAcquisitionEngine
         services.engine_service = MuxAcquisitionEngine(motion)
+        init_mux_buttons()
     elif DEVICE == Device.MOTOR:
-        from system.gpio import pin_assignments as PINS
-        from system.motor.gpio_motor import GPIOMotor
-
-        motors = dict({
-            "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
-            "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
-        })
-        
         from gasera.motion.motor_motion import MotorMotion
-        motion = MotorMotion(motors)
+        motion = MotorMotion()
         services.motion_actions = {
             "0": MotionActions(motion, unit_id="0"),
             "1": MotionActions(motion, unit_id="1"),
@@ -169,7 +188,7 @@ def init_engine():
         from gasera.acquisition.motor import MotorAcquisitionEngine
         services.motion_service = motion
         services.engine_service = MotorAcquisitionEngine(motion)
-        init_motion_buttons()
+        init_motor_buttons()
     else:
         raise RuntimeError("Unsupported device")
 

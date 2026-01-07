@@ -1,13 +1,18 @@
 # motion/motor_motion.py
 from system.log_utils import debug
 from system.motor.gpio_motor import GPIOMotor
+from system.gpio import pin_assignments as PINS
 
 class MotorMotion:
-    def __init__(self, motors: dict[str, GPIOMotor]):
-        self.motors = motors
+    def __init__(self):
+        self.motors = dict({
+            "0": GPIOMotor(PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
+            "1": GPIOMotor(PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
+        })
+        
         self._state = {
             mid: {"status": "idle", "action": None}
-            for mid in motors
+            for mid in self.motors
         }
 
     def home(self, motor_id):
