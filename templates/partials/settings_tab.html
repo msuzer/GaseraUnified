@@ -123,8 +123,10 @@
         <div id="motion-unit-0" class="col-md-4">
           <div class="card shadow-sm motion-card">
             <div class="card-body">
-              <div class="card-title">Channel 0</div>
-
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="card-title mb-0">Channel 0</div>
+                <span id="status-0" class="badge bg-light text-secondary motion-status">—</span>
+              </div>
               <div class="d-grid gap-2">
                 <button class="btn btn-primary motion-btn" onmousedown="motionStep('0')" onmouseup="motionReset('0')">
                   <i class="bi bi-arrow-right-circle"></i>
@@ -145,8 +147,10 @@
         <div id="motion-unit-1" class="col-md-4">
           <div class="card shadow-sm motion-card">
             <div class="card-body">
-              <div class="card-title">Channel 1</div>
-
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="card-title mb-0">Channel 1</div>
+                <span id="status-1" class="badge bg-light text-secondary motion-status">—</span>
+              </div>
               <div class="d-grid gap-2">
                 <button class="btn btn-primary motion-btn" onmousedown="motionStep('1')" onmouseup="motionReset('1')">
                   <i class="bi bi-arrow-right-circle"></i>
@@ -167,8 +171,10 @@
         <div id="motion-unit-both" class="col-md-4">
           <div class="card shadow-sm motion-card secondary">
             <div class="card-body">
-              <div class="card-title">Both Channels</div>
-
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="card-title mb-0">Both Channels</div>
+                <span id="status-both" class="badge bg-light text-secondary motion-status">—</span>
+              </div>
               <div class="d-grid gap-2">
                 <button class="btn btn-primary motion-btn" onmousedown="motionStep('both')"
                   onmouseup="motionReset('both')">

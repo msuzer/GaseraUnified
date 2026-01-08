@@ -72,3 +72,10 @@
 .motion-btn:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
+
+.motion-status {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 0.35em 0.6em;
+}
