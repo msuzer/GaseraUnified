@@ -110,7 +110,7 @@ function updateMotionBadge(motionId, state) {
 
   el.className = "badge " + motionStatusClass(statusStr);
 
-  const pos = state.position !== null && state.position !== undefined ? state.position : 0;
+  const pos = state.position !== null && state.position !== undefined ? state.position : "";
 
   if (actionStr) {
     el.textContent = `${statusStr.toUpperCase()} ${actionStr.toUpperCase()} ${pos}`;

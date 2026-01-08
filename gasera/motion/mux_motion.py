@@ -20,7 +20,7 @@ class MuxMotion:
             ViciUMAMux(serial_port2),
         )
 
-        self._pos = None
+        self._pos = 0
         self._state = {"status": "idle", "action": None, "position": self._pos}
 
     def home(self, unit_id=None):
