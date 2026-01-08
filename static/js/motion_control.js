@@ -12,6 +12,25 @@ function motionReset(unitId) {
   return safeFetch(`${API_PATHS.motion.reset}${unitId}`, { method: "POST" });
 }
 
+window.disableMotionControlCard = function(shouldDisable) {
+  const card = document.getElementById("motion_control_card");
+  if (card) {
+    const buttons = card.querySelectorAll("button");
+    buttons.forEach(btn => {
+      btn.disabled = shouldDisable;
+      btn.classList.toggle("disabled", shouldDisable);
+      if (shouldDisable) {
+        btn.setAttribute("aria-disabled", "true");
+        // Prevent pointer interactions on some browsers
+        btn.style.pointerEvents = "none";
+      } else {
+        btn.removeAttribute("aria-disabled");
+        btn.style.pointerEvents = "";
+      }
+    });
+  }
+};
+
 function attachMotionButtons() {
   document.querySelectorAll("#motion_control_card button[data-motion]").forEach(btn => {
     const motionId = btn.dataset.motion;

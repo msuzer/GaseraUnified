@@ -70,6 +70,8 @@ function applyPhase(phase) {
 
   window.lockPreferenceInputs?.(!window.isEnginePassive(phase));
 
+  window.disableMotionControlCard(window.isEngineActive(phase));
+
   // Cancel countdown if phase changed away from IDLE
   if (countdownTimer && phase !== window.PHASE.IDLE) {
     clearInterval(countdownTimer);
