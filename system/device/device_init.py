@@ -155,7 +155,7 @@ def init_trigger():
 
     trigger_btn = InputButton(
         pin=PINS.TRIGGER_PIN,
-        debounce_ms=400,
+        debounce_ms=1000,
         long_press_sec=4.0,
         on_short_press=services.engine_actions.repeat,
         on_long_press=services.engine_actions.long_press,
