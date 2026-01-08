@@ -12,18 +12,6 @@ function motionReset(unitId) {
   return safeFetch(`${API_PATHS.motion.reset}${unitId}`, { method: "POST" });
 }
 
-function motionStepBoth() {
-  return safeFetch(`${API_PATHS.motion.step_both}`, { method: "POST" });
-}
-
-function motionHomeBoth() {
-  return safeFetch(`${API_PATHS.motion.home_both}`, { method: "POST" });
-}
-
-function motionResetBoth() {
-  return safeFetch(`${API_PATHS.motion.reset_both}`, { method: "POST" });
-}
-
 function attachMotionButtons() {
   document.querySelectorAll("#motion_control_card button[data-motion]").forEach(btn => {
     const motionId = btn.dataset.motion;
@@ -36,7 +24,7 @@ function attachMotionButtons() {
 
       if (action === "step") {
         motionStep(motionId);
-      } else {
+      } else if (action === "home") {
         motionHome(motionId);
       }
     });
@@ -46,40 +34,13 @@ function attachMotionButtons() {
     );
   });
 
-  /* --------------------------------------------------
-   * BOTH motion buttons (new)
-   * -------------------------------------------------- */
-  const bothStep = document.getElementById("btn-both-step");
-  const bothHome = document.getElementById("btn-both-home");
-
-  if (bothStep && bothHome) {
-    bothStep.addEventListener("pointerdown", e => {
-      e.preventDefault();
-      // Ensure we receive pointerup even if finger leaves the button
-      bothStep.setPointerCapture?.(e.pointerId);
-      motionStepBoth();
-    });
-
-    bothHome.addEventListener("pointerdown", e => {
-      e.preventDefault();
-      // Ensure we receive pointerup even if finger leaves the button
-      bothHome.setPointerCapture?.(e.pointerId);
-      motionHomeBoth();
-    });
-
-    ["pointerup", "pointercancel"].forEach(ev => {
-      bothStep.addEventListener(ev, () => motionResetBoth());
-      bothHome.addEventListener(ev, () => motionResetBoth());
-    });
-  }
-
   window.addEventListener("blur", () => {
-    motionResetBoth().catch(() => { });
+    motionReset("both").catch(() => { });
   });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      motionResetBoth().catch(() => { });
+      motionReset("both").catch(() => { });
     }
   });
 }
