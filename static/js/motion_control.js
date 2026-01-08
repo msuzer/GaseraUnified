@@ -106,7 +106,7 @@ function applyMotionCapabilities() {
   const has0 = availableMotionUnits.has("0");
   const has1 = availableMotionUnits.has("1");
 
-  console.log("Motion units available:", Array.from(availableMotionUnits));
+  // console.log("Motion units available:", Array.from(availableMotionUnits));
 
   // Channel 0 always exists
   if (!has0) {
@@ -116,6 +116,7 @@ function applyMotionCapabilities() {
   // Channel 1 (motor-only)
   if (!has1) {
     document.getElementById("motion-unit-1")?.classList.add("d-none");
+    document.body.classList.add("mux-mode");
   }
 
   // BOTH only makes sense if >1 unit exists

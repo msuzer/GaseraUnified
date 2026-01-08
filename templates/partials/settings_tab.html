@@ -120,49 +120,85 @@
 
       <div class="row g-3">
         <!-- Channel 0 -->
-        <div id="motion-unit-0" class="col-md-6">
-          <h6>Channel 0</h6>
-          <span id="status-0" class="badge bg-secondary mb-2">—</span>
-          <div class="btn-group w-100">
-            <button class="btn btn-primary" data-motion="0" data-action="step">Step</button>
-            <button class="btn btn-secondary" data-motion="0" data-action="home">Home</button>
+        <div id="motion-unit-0" class="col-md-4">
+          <div class="card shadow-sm motion-card">
+            <div class="card-body">
+              <div class="card-title">Channel 0</div>
+
+              <div class="d-grid gap-2">
+                <button class="btn btn-primary motion-btn" onmousedown="motionStep('0')" onmouseup="motionReset('0')">
+                  <i class="bi bi-arrow-right-circle"></i>
+                  Step
+                </button>
+
+                <button class="btn btn-outline-primary motion-btn" onmousedown="motionHome('0')"
+                  onmouseup="motionReset('0')">
+                  <i class="bi bi-house"></i>
+                  Home
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Channel 1 -->
-        <div id="motion-unit-1" class="col-md-6">
-          <h6>Channel 1</h6>
-          <span id="status-1" class="badge bg-secondary mb-2">—</span>
-          <div class="btn-group w-100">
-            <button class="btn btn-primary" data-motion="1" data-action="step">Step</button>
-            <button class="btn btn-secondary" data-motion="1" data-action="home">Home</button>
+        <div id="motion-unit-1" class="col-md-4">
+          <div class="card shadow-sm motion-card">
+            <div class="card-body">
+              <div class="card-title">Channel 1</div>
+
+              <div class="d-grid gap-2">
+                <button class="btn btn-primary motion-btn" onmousedown="motionStep('1')" onmouseup="motionReset('1')">
+                  <i class="bi bi-arrow-right-circle"></i>
+                  Step
+                </button>
+
+                <button class="btn btn-outline-primary motion-btn" onmousedown="motionHome('1')"
+                  onmouseup="motionReset('1')">
+                  <i class="bi bi-house"></i>
+                  Home
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <hr>
+        <!-- Both Channels -->
+        <div id="motion-unit-both" class="col-md-4">
+          <div class="card shadow-sm motion-card secondary">
+            <div class="card-body">
+              <div class="card-title">Both Channels</div>
 
-      <div id="motion-unit-both" class="mb-3">
-        <h6>Both Channels</h6>
-        <div class="btn-group w-100">
-          <button class="btn btn-outline-primary" data-motion="both" data-action="step">Step</button>
-          <button class="btn btn-outline-secondary" data-motion="both" data-action="home">Home</button>
+              <div class="d-grid gap-2">
+                <button class="btn btn-primary motion-btn" onmousedown="motionStep('both')"
+                  onmouseup="motionReset('both')">
+                  <i class="bi bi-arrow-right-circle"></i>
+                  Step
+                </button>
+
+                <button class="btn btn-outline-primary motion-btn" onmousedown="motionHome('both')"
+                  onmouseup="motionReset('both')">
+                  <i class="bi bi-house"></i>
+                  Home
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <small class="text-muted">
+          Hold to move · Release to stop
+        </small>
+
       </div>
+    </div>
 
-      <div class="small text-muted mt-2">
-        Hold button to move. Release to stop.
+    <div class="card mb-3">
+      <div class="card-header">Device Power</div>
+      <div class="card-body">
+        <button id="btnDeviceRestart" class="btn btn-warning me-2">Restart Device</button>
+        <button id="btnDeviceShutdown" class="btn btn-danger">Shutdown Device</button>
       </div>
-
     </div>
-  </div>
 
-  <div class="card mb-3">
-    <div class="card-header">Device Power</div>
-    <div class="card-body">
-      <button id="btnDeviceRestart" class="btn btn-warning me-2">Restart Device</button>
-      <button id="btnDeviceShutdown" class="btn btn-danger">Shutdown Device</button>
-    </div>
   </div>
-
-</div>

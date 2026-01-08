@@ -1,0 +1,74 @@
+/* ===== Motion UI polish ===== */
+
+.motion-card {
+  border: none;
+  background: var(--bs-light);
+  border-radius: 16px;
+}
+
+.motion-card.secondary {
+  background: #f8f9fa;
+  opacity: 0.92;
+}
+
+.motion-card .card-body {
+  padding: 1rem;
+}
+
+.motion-card .card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.motion-btn {
+  height: 48px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.motion-btn i {
+  margin-right: .4rem;
+}
+
+.mux-mode #motion-unit-0 {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.motion-btn:active {
+  transform: scale(0.98);
+}
+
+/* Softer primary for motion actions */
+.motion-btn.btn-primary {
+  background-color: #334155;   /* slate */
+  border-color: #334155;
+}
+
+.motion-btn.btn-primary:hover,
+.motion-btn.btn-primary:focus {
+  background-color:#1e293b;
+  border-color: #1e293b;
+}
+
+/* Secondary (Home) buttons */
+.motion-btn.btn-outline-primary {
+  color: #2563eb;
+  border-color: #93c5fd;       /* lighter border */
+  background-color: transparent;
+}
+
+.motion-btn.btn-outline-primary:hover,
+.motion-btn.btn-outline-primary:focus {
+  color: #1e40af;
+  border-color: #60a5fa;
+  background-color: rgba(37, 99, 235, 0.08); /* soft tint */
+}
+
+.motion-btn:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
