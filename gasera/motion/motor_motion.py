@@ -26,8 +26,10 @@ class MotorMotion:
         debug(f"[MOTOR] Stepping motor {motor_id}.")
 
     def reset(self, motor_id):
-        self.motors[motor_id].stop()
-        debug(f"[MOTOR] Resetting motor {motor_id}.")
+        # Only stop if currently moving to avoid redundant GPIO line requests
+        if self.motors[motor_id].is_moving:
+            self.motors[motor_id].stop()
+            debug(f"[MOTOR] Resetting motor {motor_id}.")
         self._state[motor_id] = {"status": "idle", "action": "reset"}
 
     def state(self, motor_id):
