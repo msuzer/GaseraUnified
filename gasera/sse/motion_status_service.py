@@ -10,19 +10,18 @@ class MotionStatusService:
 
     def get_motion_snapshots(self) -> Dict[str, Any] | None:
         motion = services.motion_service
-        if motion is None:
+        actions = services.motion_actions
+        if motion is None or not actions:
             return None
 
         snapshots: Dict[str, Any] = {}
 
-        # Collect available units (tolerate missing ones, e.g., mux has only "0")
-        for uid in ("0", "1"):
+        for uid in actions.keys():
             try:
                 st = motion.state(uid)
                 if st is not None:
                     snapshots[uid] = st
             except Exception:
-                # ignore missing/unsupported units
                 pass
 
         return snapshots if snapshots else {"error": True}

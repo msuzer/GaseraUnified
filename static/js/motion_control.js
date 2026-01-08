@@ -12,7 +12,7 @@ function motionReset(unitId) {
   return safeFetch(`${API_PATHS.motion.reset}${unitId}`, { method: "POST" });
 }
 
-window.disableMotionControlCard = function(shouldDisable) {
+window.disableMotionControlCard = function (shouldDisable) {
   const card = document.getElementById("motion_control_card");
   if (card) {
     const buttons = card.querySelectorAll("button");
@@ -99,12 +99,45 @@ function updateMotionBadge(motionId, state) {
   }
 }
 
+let availableMotionUnits = new Set();
+let motionUiInitialized = false;
+
+function applyMotionCapabilities() {
+  const has0 = availableMotionUnits.has("0");
+  const has1 = availableMotionUnits.has("1");
+
+  console.log("Motion units available:", Array.from(availableMotionUnits));
+
+  // Channel 0 always exists
+  if (!has0) {
+    document.getElementById("motion-unit-0")?.classList.add("d-none");
+  }
+
+  // Channel 1 (motor-only)
+  if (!has1) {
+    document.getElementById("motion-unit-1")?.classList.add("d-none");
+  }
+
+  // BOTH only makes sense if >1 unit exists
+  if (!(has0 && has1)) {
+    document.getElementById("motion-unit-both")?.classList.add("d-none");
+  }
+}
+
 function onMotionStatusFromSSE(d) {
   if (!d || !d.motion_status) return;
 
   // motion_status can be {0:..., 1:...} OR {error:true}
   const ms = d.motion_status;
   if (ms.error) return;
+
+  // Discover available units
+  Object.keys(ms).forEach(uid => availableMotionUnits.add(uid));
+
+  if (!motionUiInitialized) {
+    applyMotionCapabilities();
+    motionUiInitialized = true;
+  }
 
   updateMotionBadge("0", ms["0"]);
   updateMotionBadge("1", ms["1"]);

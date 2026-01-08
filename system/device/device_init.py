@@ -171,7 +171,8 @@ def init_engine():
         from gasera.motion.mux_motion import MuxMotion
         motion = MuxMotion()
         services.motion_actions = {
-            "0": MotionActions(motion, unit_id="0")
+            "0": MotionActions(motion, unit_id="0"),
+            # Mux has only one motion unit
         }
         services.motion_service = motion
         from gasera.acquisition.mux import MuxAcquisitionEngine
