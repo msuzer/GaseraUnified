@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from system import services
-from system.log_utils import info, warn
+from system.log_utils import debug, info, warn
 from gasera.acquisition.task_event import TaskEvent
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
@@ -75,7 +75,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         return True, "ok"
 
     def can_finish_now(self) -> bool:
-        info("[ENGINE] checking armed state within motor engine")
+        debug("[ENGINE] checking armed state within motor engine")
         return self._armed_waiting_for_repeat
 
     def trigger_repeat(self) -> tuple[bool, str]:

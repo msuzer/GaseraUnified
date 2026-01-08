@@ -31,67 +31,37 @@ def gasera_api_gas_colors() -> tuple[Response, int]:
 @gasera_bp.route("/api/measurement/start", methods=["POST"])
 def start_measurement() -> tuple[Response, int]:
     data = request.get_json(silent=True) or {}
-    try:
-        services.preferences_service.update_from_dict(data, write_disk=True)
-        started, msg = services.engine_service.start()
+    services.preferences_service.update_from_dict(data, write_disk=True)
 
-        return jsonify({"ok": started, "message": msg}), 200
-
-    except Exception as e:
-        error(f"[MEAS] start failed: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+    ok, msg = services.engine_actions.start()
+    return jsonify({"ok": ok, "message": msg}), 200
 
 @gasera_bp.route("/api/measurement/repeat", methods=["POST"])
-def measurement_repeat():
-    ok, msg = services.engine_service.trigger_repeat()
-    if not ok:
-        return jsonify(ok=False, error=msg), 500
-
-    return jsonify(ok=True, message=msg), 200
+def measurement_repeat() -> tuple[Response, int]:
+    ok, msg = services.engine_actions.repeat()
+    return jsonify({"ok": ok, "message": msg}), 200
 
 @gasera_bp.route("/api/measurement/abort", methods=["POST"])
 def abort_measurement() -> tuple[Response, int]:
-    warn("[MEAS] Abort requested")
-    ok, msg = services.engine_service.abort()
-    if not ok:
-        debug(f"[MEAS] abort ignored {msg}")
-        return jsonify({"ok": False, "message": msg}), 200
-
-    return jsonify({"ok": True, "message": "Abort initiated"}), 200
+    ok, msg = services.engine_actions.abort()
+    return jsonify({"ok": ok, "message": msg}), 200
 
 @gasera_bp.route("/api/measurement/finish", methods=["POST"])
 def finish_measurement() -> tuple[Response, int]:
-    info("[MEAS] Finish requested")
-    
-    ok, msg = services.engine_service.finish()
-    
-    if not ok:
-        debug(f"[MEAS] finish ignored {msg}")
-        return jsonify({"ok": False, "message": msg}), 200
-
-    return jsonify({"ok": True, "message": "Finish requested"}), 200
+    ok, msg = services.engine_actions.finish()
+    return jsonify({"ok": ok, "message": msg}), 200
 
 @gasera_bp.route("/api/measurement/config", methods=["GET"])
 def get_measurement_config() -> tuple[Response, int]:
     from system.preferences import KEY_MEASUREMENT_START_MODE
     from gasera.acquisition.base import MeasurementStartMode
 
-    try:
-        mode = services.preferences_service.get(
-            KEY_MEASUREMENT_START_MODE,
-            MeasurementStartMode.PER_CYCLE
-        )
-        return jsonify({
-            "ok": True,
-            KEY_MEASUREMENT_START_MODE: mode
-        }), 200
+    mode = services.preferences_service.get(
+        KEY_MEASUREMENT_START_MODE,
+        MeasurementStartMode.PER_CYCLE
+    )
 
-    except Exception as e:
-        error(f"[MEAS] failed to read {KEY_MEASUREMENT_START_MODE}: {e}")
-        return jsonify({
-            "ok": False,
-            "error": str(e)
-        }), 500
+    return jsonify({"ok": True, KEY_MEASUREMENT_START_MODE: mode}), 200
 
 @gasera_bp.route("/api/measurement/config", methods=["POST"])
 def update_measurement_config() -> tuple[Response, int]:
@@ -111,17 +81,14 @@ def update_measurement_config() -> tuple[Response, int]:
                     f"'{MeasurementStartMode.PER_CYCLE}'"
         }), 400
 
-    try:
-        services.preferences_service.update_from_dict(
-            {KEY_MEASUREMENT_START_MODE: mode},
-            write_disk=True
-        )
-        info(f"[MEAS] {KEY_MEASUREMENT_START_MODE} set to {mode}")
-        return jsonify({"ok": True, KEY_MEASUREMENT_START_MODE: mode}), 200
+    services.preferences_service.update_from_dict(
+        {KEY_MEASUREMENT_START_MODE: mode},
+        write_disk=True
+    )
 
-    except Exception as e:
-        error(f"[MEAS] failed to update {KEY_MEASUREMENT_START_MODE}: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+    info(f"[MEAS] {KEY_MEASUREMENT_START_MODE} set to {mode}")
+
+    return jsonify({"ok": True, KEY_MEASUREMENT_START_MODE: mode}), 200
 
 # ----------------------------------------------------------------------
 # Server-Sent Events

@@ -1,5 +1,4 @@
 # device/device_init.py
-from gasera.motion.actions import MotionActions
 from system.device.device_profile import DEVICE, Device
 from system import services
 from system.log_utils import info, debug
@@ -79,6 +78,7 @@ def init_gasera_controller():
     services.gasera_controller = GaseraController(services.tcp_client)
 
 def init_motor_buttons():
+    from gasera.motion.actions import MotionActions
     from system.input.button import InputButton
     from system.gpio import pin_assignments as PINS
 
@@ -121,6 +121,7 @@ def init_motor_buttons():
         btn.start()
 
 def init_mux_buttons():
+    from gasera.motion.actions import MotionActions
     from system.input.button import InputButton
     from system.gpio import pin_assignments as PINS
 
@@ -162,11 +163,10 @@ def init_trigger():
 
     trigger_btn.start()
 
-def init_engine_actions():
-    from gasera.acquisition.actions import EngineActions
-    services.engine_actions = EngineActions(services.engine_service)
-
 def init_engine():
+    from gasera.motion.actions import MotionActions
+    from gasera.acquisition.actions import EngineActions
+
     if DEVICE == Device.MUX:
         from gasera.motion.mux_motion import MuxMotion
         motion = MuxMotion()
@@ -191,7 +191,7 @@ def init_engine():
     else:
         raise RuntimeError("Unsupported device")
 
-    init_engine_actions()
+    services.engine_actions = EngineActions(services.engine_service)
     init_trigger()
 
 def init_live_status_service():

@@ -187,6 +187,9 @@ class BaseAcquisitionEngine(ABC):
         info("[ENGINE] not supported by this engine")
         return False
 
+    def is_in_active_phase(self) -> bool:
+        return self.progress.phase in (Phase.MEASURING, Phase.PAUSED, Phase.SWITCHING, Phase.HOMING)
+
     # -----------------------------
     # Hooks / abstract methods
     # -----------------------------

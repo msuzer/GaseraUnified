@@ -14,41 +14,50 @@ class EngineActions:
     def __init__(self, engine: BaseAcquisitionEngine):
         self._engine = engine
 
-    def start(self):
-        try:
-            info("[ENGINE] Start requested")
-            ok, msg = self._engine.start()
-            if not ok:
-                warn(f"[ENGINE] Start rejected: {msg}")
-        except Exception as e:
-            warn(f"[ENGINE] Start error: {e}")
+    def start(self) -> tuple[bool, str]:
+        info("[ENGINE] Start requested")
+        ok, msg = self._engine.start()
+        if not ok:
+            warn(f"[ENGINE] Start rejected: {msg}")
+        return ok, msg
 
-    def repeat(self):
-        try:
-            info("[ENGINE] Repeat requested")
-            ok, msg = self._engine.trigger_repeat()
-            if not ok:
-                warn(f"[ENGINE] Repeat rejected: {msg}")
-        except Exception as e:
-            warn(f"[ENGINE] Repeat error: {e}")
+    def repeat(self) -> tuple[bool, str]:
+        info("[ENGINE] Repeat requested")
+        ok, msg = self._engine.trigger_repeat()
+        if not ok:
+            warn(f"[ENGINE] Repeat rejected: {msg}")
+        return ok, msg
 
-    def abort(self):
-        try:
-            info("[ENGINE] Abort requested")
-            ok, msg = self._engine.abort()
-            if not ok:
-                warn(f"[ENGINE] Abort rejected: {msg}")
-        except Exception as e:
-            warn(f"[ENGINE] Abort error: {e}")
+    def abort(self) -> tuple[bool, str]:
+        warn("[ENGINE] Abort requested")
+        ok, msg = self._engine.abort()
+        if not ok:
+            warn(f"[ENGINE] Abort rejected: {msg}")
+        return ok, msg
+    
+    def finish(self) -> tuple[bool, str]:
+        info("[ENGINE] Finish requested")
+        ok, msg = self._engine.finish()
+        if not ok:
+            warn(f"[ENGINE] Finish rejected: {msg}")
+        return ok, msg
 
-    def finish(self):
-        try:
-            info("[ENGINE] Finish requested")
-            ok, msg = self._engine.finish()
-            if not ok:
-                warn(f"[ENGINE] Finish rejected: {msg}")
-        except Exception as e:
-            warn(f"[ENGINE] Finish error: {e}")
+    def perform_action(self, action: str) -> tuple[bool, str]:
+        """
+        Perform an action by name.
+        """
+        action_map = {
+            "start": self.start,
+            "repeat": self.repeat,
+            "abort": self.abort,
+            "finish": self.finish,
+        }
+
+        if action not in action_map:
+            warn(f"[ENGINE] Unknown action requested: {action}")
+            return False, "Unknown action"
+
+        return action_map[action]()
 
     def long_press(self):
         """
