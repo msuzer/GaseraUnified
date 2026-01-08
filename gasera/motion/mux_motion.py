@@ -19,23 +19,24 @@ class MuxMotion:
             ViciUMAMux(serial_port1),
             ViciUMAMux(serial_port2),
         )
-        
-        self._state = {"status": "idle", "action": None}
+
+        self._pos = None
+        self._state = {"0": {"status": "idle", "action": None, "position": self._pos}}
 
     def home(self, unit_id=None):
-        self.cmux_gpio.home()
+        self._pos = self.cmux_gpio.home()
         self.cmux_serial.home()
         debug("[MUX] Homing both muxes.")
-        self._state = {"status": "moving", "action": "home"}
+        self._state = {"0": {"status": "moving", "action": "home", "position": self._pos}}
 
     def step(self, unit_id=None):
-        self.cmux_gpio.select_next()
+        self._pos = self.cmux_gpio.select_next()
         self.cmux_serial.select_next()
         debug("[MUX] Stepping both muxes.")
-        self._state = {"status": "moving", "action": "step"}
-    
+        self._state = {"0": {"status": "moving", "action": "step", "position": self._pos}}
+
     def reset(self, unit_id=None):
-        self._state = {"status": "idle", "action": "reset"}
+        self._state = {"0": {"status": "idle", "action": "reset", "position": self._pos}}
         debug("[MUX] Resetting mux motion state.")
     
     def state(self, unit_id):

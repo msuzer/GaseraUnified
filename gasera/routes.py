@@ -138,9 +138,9 @@ def sse_events() -> Response:
             try:
                 _progress, _live_data = services.live_status_service.get_live_snapshots()
                 _device_status = services.device_status_service.get_device_snapshots()
-                _motor_status = services.motor_status_service.get_motor_snapshots()
+                _motion_status = services.motion_status_service.get_motion_snapshots()
 
-                state = tracker.build(_progress, _live_data, _device_status, _motor_status)
+                state = tracker.build(_progress, _live_data, _device_status, _motion_status)
                 payload = json.dumps(state, sort_keys=True)
                 if payload != last_payload:
                     yield f"data: {payload}\n\n"

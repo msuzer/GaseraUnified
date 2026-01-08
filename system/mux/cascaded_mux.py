@@ -7,6 +7,7 @@ class CascadedMux:
         self.m1 = mux1
         self.m2 = mux2
         self._vpos = 0
+        self._max = self.m1.max + self.m2.max - 1 # total positions
 
     def home(self):
         self.m1.home()
@@ -17,8 +18,10 @@ class CascadedMux:
     def select_next(self):
         if self._vpos < self.m1.max - 1:
             self.m1.select_next()
+            self._vpos += 1
         else:
-            self.m2.select_next()
+            if self._vpos < self._max:
+                self.m2.select_next()
+                self._vpos += 1
 
-        self._vpos += 1
         return self._vpos

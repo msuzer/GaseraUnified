@@ -46,14 +46,14 @@ init_gasera_controller()
 start_device_status_poller()
 init_engine()
 
-from system.device.device_init import init_live_status_service, init_live_display_services, init_motor_status_service
+from system.device.device_init import init_live_status_service, init_live_display_services, init_motion_status_service
 # instantiate live status service now that engine is available
 init_live_status_service()
 # perform runtime wiring: attach engine/display and start live updater
 init_live_display_services()
 
-# instantiate motor status service so `gasera.routes` sees it
-init_motor_status_service()
+# instantiate motion status service so `gasera.routes` sees it
+init_motion_status_service()
 
 from system.device.device_init import init_version_manager, start_display_thread
 # initialize version manager before importing routes that use it

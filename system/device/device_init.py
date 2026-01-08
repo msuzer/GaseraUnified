@@ -171,9 +171,9 @@ def init_engine():
         from gasera.motion.mux_motion import MuxMotion
         motion = MuxMotion()
         services.motion_actions = {
-            "0": MotionActions(motion, unit_id="0"),
-            "1": MotionActions(motion, unit_id="1"),
+            "0": MotionActions(motion, unit_id="0")
         }
+        services.motion_service = motion
         from gasera.acquisition.mux import MuxAcquisitionEngine
         services.engine_service = MuxAcquisitionEngine(motion)
         init_mux_buttons()
@@ -184,9 +184,8 @@ def init_engine():
             "0": MotionActions(motion, unit_id="0"),
             "1": MotionActions(motion, unit_id="1"),
         }
-        
-        from gasera.acquisition.motor import MotorAcquisitionEngine
         services.motion_service = motion
+        from gasera.acquisition.motor import MotorAcquisitionEngine
         services.engine_service = MotorAcquisitionEngine(motion)
         init_motor_buttons()
     else:
@@ -214,9 +213,9 @@ def init_live_display_services():
         services.live_status_service.start_background_updater()
 
 
-def init_motor_status_service():
-    from gasera.sse.motor_status_service import MotorStatusService
-    services.motor_status_service = MotorStatusService()
+def init_motion_status_service():
+    from gasera.sse.motion_status_service import MotionStatusService
+    services.motion_status_service = MotionStatusService()
 
 
 def init_version_manager():

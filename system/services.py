@@ -4,7 +4,7 @@ from gasera.motion.actions import MotionActions
 from gasera.motion.iface import MotionInterface
 from gasera.sse.device_status_service import DeviceStatusService
 from gasera.sse.live_status_service import LiveStatusService
-from gasera.sse.motor_status_service import MotorStatusService
+from gasera.sse.motion_status_service import MotionStatusService
 from system.gpio.gpio_control import GPIOController
 from gasera.tcp_client import GaseraTCPClient
 from gasera.controller import GaseraController
@@ -41,7 +41,7 @@ live_status_service: LiveStatusService = None
 
 device_status_service: DeviceStatusService = None
  
-motor_status_service: MotorStatusService = None
+motion_status_service: MotionStatusService = None
  
 version_manager: VersionManager = None
 

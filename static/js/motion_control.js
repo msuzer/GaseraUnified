@@ -1,4 +1,4 @@
-// static/js/motor_jog.js
+// static/js/motion_control.js
 
 function motionStep(unitId) {
   return safeFetch(`${API_PATHS.motion.step}${unitId}`, { method: "POST" });
@@ -24,9 +24,9 @@ function motionResetBoth() {
   return safeFetch(`${API_PATHS.motion.reset_both}`, { method: "POST" });
 }
 
-function attachJogButtons() {
-  document.querySelectorAll("#motor-jog-card button[data-motor]").forEach(btn => {
-    const motorId = btn.dataset.motor;
+function attachMotionButtons() {
+  document.querySelectorAll("#motion_control_card button[data-motion]").forEach(btn => {
+    const motionId = btn.dataset.motion;
     const action = btn.dataset.action;
 
     btn.addEventListener("pointerdown", e => {
@@ -35,19 +35,19 @@ function attachJogButtons() {
       btn.setPointerCapture?.(e.pointerId);
 
       if (action === "step") {
-        motionStep(motorId);
+        motionStep(motionId);
       } else {
-        motionHome(motorId);
+        motionHome(motionId);
       }
     });
 
     ["pointerup", "pointercancel"].forEach(ev =>
-      btn.addEventListener(ev, () => motionReset(motorId))
+      btn.addEventListener(ev, () => motionReset(motionId))
     );
   });
 
   /* --------------------------------------------------
-   * BOTH motors jog buttons (new)
+   * BOTH motion buttons (new)
    * -------------------------------------------------- */
   const bothStep = document.getElementById("btn-both-step");
   const bothHome = document.getElementById("btn-both-home");
@@ -84,7 +84,7 @@ function attachJogButtons() {
   });
 }
 
-function motorStatusClass(status) {
+function motionStatusClass(status) {
   switch (status) {
     case "idle":
       return "bg-secondary";
@@ -101,37 +101,41 @@ function motorStatusClass(status) {
   }
 }
 
-function updateMotorBadge(motorId, state) {
-  const el = document.getElementById(`status-${motorId}`);
+function updateMotionBadge(motionId, state) {
+  const el = document.getElementById(`status-${motionId}`);
   if (!el || !state) return;
 
-  el.className = "badge " + motorStatusClass(state.status || "unknown");
+  const statusStr = (state.status || "unknown").toString();
+  const actionStr = state.action != null ? state.action.toString() : null;
 
-  if (state.action) {
-    el.textContent =
-      `${state.status.toUpperCase()} ${state.action.toUpperCase()}`;
+  el.className = "badge " + motionStatusClass(statusStr);
+
+  const pos = state.position !== null && state.position !== undefined ? state.position : 0;
+
+  if (actionStr) {
+    el.textContent = `${statusStr.toUpperCase()} ${actionStr.toUpperCase()} ${pos}`;
   } else {
-    el.textContent = state.status.toUpperCase();
+    el.textContent = `${statusStr.toUpperCase()} ${pos}`;
   }
 }
 
-function onMotorStatusFromSSE(d) {
-  if (!d || !d.motor_status) return;
+function onMotionStatusFromSSE(d) {
+  if (!d || !d.motion_status) return;
 
-  // motor_status can be {0:..., 1:...} OR {error:true}
-  const ms = d.motor_status;
+  // motion_status can be {0:..., 1:...} OR {error:true}
+  const ms = d.motion_status;
   if (ms.error) return;
 
-  updateMotorBadge("0", ms["0"]);
-  updateMotorBadge("1", ms["1"]);
+  updateMotionBadge("0", ms["0"]);
+  updateMotionBadge("1", ms["1"]);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const card = document.getElementById("motor-jog-card");
+  const card = document.getElementById("motion_control_card");
   if (!card) return;
 
-  attachJogButtons();
+  attachMotionButtons();
 
-  // SSE-driven motor status (no polling)
-  window.GaseraHub?.subscribe(onMotorStatusFromSSE);
+  // SSE-driven motion status (no polling)
+  window.GaseraHub?.subscribe(onMotionStatusFromSSE);
 });
