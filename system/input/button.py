@@ -5,7 +5,11 @@ from system import services
 
 class InputButton:
     """
-    Generic active-low button with debounce and optional long press.
+    Generic active-low button with debounce and release-based
+    short/long press detection.
+
+    - Motion logic should use on_press / on_release
+    - Short/long press is decided deterministically on release
     """
 
     def __init__(
@@ -29,9 +33,10 @@ class InputButton:
         self.on_long_press = on_long_press
 
         self._last_edge = 0.0
-        self._press_start = None
-        self._stable_state = 1
-        self._long_timer = None
+        self._stable_level = 1
+        self._logical_pressed = False          # debounced logical state
+        self._press_start = None       # monotonic timestamp
+
         self._lock = threading.RLock()
 
     # --------------------------------------------------
@@ -42,53 +47,56 @@ class InputButton:
     # --------------------------------------------------
 
     def _on_edge(self, _, val):
-        now = time.time()
+        # Use monotonic clock to avoid issues if system time changes
+        now = time.monotonic()
         val = 1 if int(val) != 0 else 0
 
         with self._lock:
-            if now - self._last_edge < self.debounce:
+            # Suppress repeated edges at the same level (bounce),
+            # but allow real transitions even within the debounce window
+            if now - self._last_edge < self.debounce and val == self._stable_level:
                 return
 
             self._last_edge = now
-            self._stable_state = val
+            # Only act on real transitions
+            if val == self._stable_level:
+                return
+
+            self._stable_level = val
 
             if val == 0:
                 self._handle_press()
             else:
                 self._handle_release()
 
+    # --------------------------------------------------
+    # Internal state transitions (debounced)
+    # --------------------------------------------------
     def _handle_press(self):
-        self._press_start = time.time()
-        if self.on_press:
-            self.on_press()
+        if not self._logical_pressed:
+            self._logical_pressed = True
+            self._press_start = time.monotonic()
 
-        if self.long_press_sec:
-            self._long_timer = threading.Timer(
-                self.long_press_sec,
-                self._fire_long_if_still_pressed
-            )
-            self._long_timer.daemon = True
-            self._long_timer.start()
+            if self.on_press:
+                self.on_press()
 
     def _handle_release(self):
-        now = time.time()
+        if not self._logical_pressed:
+            return
 
-        if self._long_timer and self._long_timer.is_alive():
-            self._long_timer.cancel()
+        duration = time.monotonic() - self._press_start
 
-        if self._press_start and self.long_press_sec:
-            if now - self._press_start < self.long_press_sec:
-                if self.on_short_press:
-                    self.on_short_press()
-
+        self._logical_pressed = False
         self._press_start = None
 
+        # Decide gesture first
+        if self.long_press_sec is not None and duration >= self.long_press_sec:
+            if self.on_long_press:
+                self.on_long_press()
+        else:
+            if self.on_short_press:
+                self.on_short_press()
+
+        # Then notify release (e.g. stop motion)
         if self.on_release:
             self.on_release()
-
-    def _fire_long_if_still_pressed(self):
-        with self._lock:
-            if self._stable_state == 0:
-                if self.on_long_press:
-                    self.on_long_press()
-                self._press_start = None
