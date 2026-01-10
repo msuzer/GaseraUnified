@@ -6,7 +6,6 @@ from gasera.sse.device_status_service import DeviceStatusService
 from gasera.sse.live_status_service import LiveStatusService
 from gasera.sse.motion_status_service import MotionStatusService
 from system.gpio.gpio_control import GPIOController
-from gasera.tcp_client import GaseraTCPClient
 from gasera.controller import GaseraController
 from system.buzzer.buzzer_facade import BuzzerFacade
 from gasera.acquisition.base import BaseAcquisitionEngine
@@ -19,27 +18,25 @@ from system.version_manager import VersionManager
 # Service singletons (initialized in order in device_init.py)
 # ------------------------------------------------------------------------------
 
+preferences_service: Preferences = None
+
 gpio_service: GPIOController = None
+
+buzzer_service: BuzzerFacade = None
 
 display_controller: DisplayController = None
 
 display_adapter: DisplayAdapter = None
 
-buzzer: BuzzerFacade = None
+device_status_service: DeviceStatusService = None
 
 motion_service: MotionInterface = None
 
 engine_service: BaseAcquisitionEngine = None
 
-tcp_client: GaseraTCPClient = None
-
 gasera_controller: GaseraController = None
 
-preferences_service: Preferences = None
- 
 live_status_service: LiveStatusService = None
-
-device_status_service: DeviceStatusService = None
  
 motion_status_service: MotionStatusService = None
  

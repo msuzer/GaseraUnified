@@ -84,11 +84,11 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         with self._lock:
             if self._cycle_in_progress or self._repeat_event.is_set():
-                services.buzzer.play("busy")
+                services.buzzer_service.play("busy")
                 return False, "Cycle already in progress"
 
             self._repeat_event.set()
-            services.buzzer.play("step")
+            services.buzzer_service.play("step")
             return True, "Repeat triggered"
 
     def _run_loop(self) -> None:
@@ -152,7 +152,7 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 self.progress.overall_percent = pct # overall percent mirrors cycle percent
                 self._emit_progress_updates()
 
-            services.buzzer.play("completed")
+            services.buzzer_service.play("completed")
 
         finally:
             if self.cfg.measurement_start_mode == MeasurementStartMode.PER_CYCLE:

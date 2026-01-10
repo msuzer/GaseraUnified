@@ -124,23 +124,23 @@ class BaseAcquisitionEngine(ABC):
         with self._lock:
             if self.is_running():
                 warn("[ENGINE] start requested but already running")
-                services.buzzer.play("busy")
+                services.buzzer_service.play("busy")
                 return False, "Measurement already running"
 
             self.progress.reset_all() # clear previous state right here before load config
             ok, msg = self._validate_and_load_config()
             if not ok:
-                services.buzzer.play("invalid")
+                services.buzzer_service.play("invalid")
                 return False, msg
 
             ok, msg = self._apply_online_mode_preference()
             if not ok:
-                services.buzzer.play("error")
+                services.buzzer_service.play("error")
                 return False, msg
 
             ok, msg = self._on_start_prepare()
             if not ok:
-                services.buzzer.play("error")
+                services.buzzer_service.play("error")
                 return False, msg
 
             # Initialize logging
@@ -247,12 +247,12 @@ class BaseAcquisitionEngine(ABC):
             self._stop_event.clear()
             self._set_phase(Phase.ABORTED)
             self._emit_task_events(TaskEvent.TASK_ABORTED)
-            services.buzzer.play("cancel")
+            services.buzzer_service.play("cancel")
             info("[ENGINE] Measurement run aborted by user")
         else:
             self._set_phase(Phase.IDLE)
             self._emit_task_events(TaskEvent.TASK_FINISHED)
-            services.buzzer.play("completed")
+            services.buzzer_service.play("completed")
             info("[ENGINE] Measurement run complete")
 
         # 4. Ensure Gasera is stopped
@@ -362,7 +362,7 @@ class BaseAcquisitionEngine(ABC):
         self._set_phase(Phase.SWITCHING)
 
         if was_enabled:
-            services.buzzer.play("step")
+            services.buzzer_service.play("step")
 
         self.motion.step(unit_id)
         ok = self._blocking_wait(duration=self.cfg.motion_timeout, notify=True)
@@ -374,7 +374,7 @@ class BaseAcquisitionEngine(ABC):
     def motion_home_and_wait(self, unit_id: Optional[str] = None) -> bool:
         self._set_phase(Phase.HOMING)
 
-        services.buzzer.play("home")
+        services.buzzer_service.play("home")
 
         self.motion.reset(unit_id) # reset both motor and solenoid valve before homing
         self.motion.home(unit_id)

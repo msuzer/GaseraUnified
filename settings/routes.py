@@ -306,7 +306,7 @@ def restart_service():
 
     # Restart service with optional simulator arg
     info(f"Restarting gasera.service with simulator={use_simulator}")
-    services.buzzer.play("service_restart")
+    services.buzzer_service.play("service_restart")
     services.display_controller.show(
         services.display_adapter.info("User Request:", "Restarting Service...")
     )
@@ -319,7 +319,7 @@ def device_restart():
     if guard:
         return guard
 
-    services.buzzer.play("restart")
+    services.buzzer_service.play("restart")
     services.display_controller.show(
         services.display_adapter.info("User Request:", "Restarting Device...")
     )
@@ -333,7 +333,7 @@ def device_shutdown():
     if guard:
         return guard
 
-    services.buzzer.play("shutdown")
+    services.buzzer_service.play("shutdown")
     services.display_controller.show(
         services.display_adapter.info("User Request:", "Shutting Down Device...")
     )

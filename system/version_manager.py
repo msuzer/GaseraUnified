@@ -96,7 +96,7 @@ class VersionManager:
         info(f"Restarting {SERVICE_NAME} {reason}".strip())
         try:
             from system import services
-            services.buzzer.play("service_restart")
+            services.buzzer_service.play("service_restart")
             services.display_controller.show(
                 services.display_adapter.info("Version Manager:", "Restarting Service...")
             )

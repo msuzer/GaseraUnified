@@ -38,7 +38,7 @@ def init_buzzer_service():
     
     buzzer_runtime = BuzzerRuntime()
 
-    services.buzzer = BuzzerFacade(
+    services.buzzer_service = BuzzerFacade(
         engine=buzzer_engine,
         runtime=buzzer_runtime,
         preferences=services.preferences_service,
@@ -67,12 +67,8 @@ def init_device_status_service():
     services.device_status_service = DeviceStatusService()
     # register preference callbacks (requires preferences_service to be initialized)
     services.device_status_service.register_callbacks()
-
-
-def start_device_status_poller():
     # start background poller
     services.device_status_service.start_poller()
-
 
 def start_display_thread():
     import time, threading
@@ -84,16 +80,13 @@ def start_display_thread():
     t = threading.Thread(target=run, daemon=True, name="display-thread")
     t.start()
 
-
-def init_tcp_client(target_ip: str):
-    from gasera.tcp_client import GaseraTCPClient
-    services.tcp_client = GaseraTCPClient(target_ip)
-    debug(f"[GaseraMux] TCP target: {target_ip}:8888")
-
-
-def init_gasera_controller():
+def init_gasera_controller(target_ip: str):
     from gasera.controller import GaseraController
-    services.gasera_controller = GaseraController(services.tcp_client)
+    from gasera.tcp_client import GaseraTCPClient
+    
+    tcp_client = GaseraTCPClient(target_ip)
+    debug(f"[GaseraMux] TCP target: {target_ip}:8888")
+    services.gasera_controller = GaseraController(tcp_client)
 
 def init_motor_buttons():
     from gasera.motion.actions import MotionActions
@@ -181,7 +174,7 @@ def init_trigger():
 
     trigger_btn.start()
 
-def init_engine():
+def init_acquisition_engine():
     from gasera.motion.actions import MotionActions
     from gasera.acquisition.actions import EngineActions
     from system.gpio import pin_assignments as PINS
@@ -260,3 +253,25 @@ def init_motion_status_service():
 def init_version_manager():
     from system.version_manager import VersionManager
     services.version_manager = VersionManager()
+
+# Initialize all services with the given target IP
+def init_all_services(target_ip: str):
+    init_device()
+    init_gpio_service()
+    
+    # preferences will init in app.py before this is called
+    # init_preferences_service()
+
+    init_buzzer_service()
+    init_display_stack()
+    init_device_status_service()
+
+    init_gasera_controller(target_ip)
+    init_acquisition_engine()
+
+    init_live_status_service()
+    init_live_display_services()
+    init_motion_status_service()
+
+    init_version_manager()
+    start_display_thread()

@@ -153,7 +153,7 @@ def get_buzzer_state() -> tuple[Response, int]:
     Falls back to stored preference if not yet set.
     """
     try:
-        enabled = getattr(services.buzzer, "enabled", None)
+        enabled = getattr(services.buzzer_service, "enabled", None)
         if enabled is None:
             from system.preferences import KEY_BUZZER_ENABLED
             enabled = services.preferences_service.get(KEY_BUZZER_ENABLED, True)
@@ -176,7 +176,7 @@ def set_buzzer_state() -> tuple[Response, int]:
         return jsonify({"ok": False, "error": "Missing 'enabled' field"}), 400
 
     enabled = bool(data["enabled"])
-    services.buzzer.enable(enabled)
+    services.buzzer_service.enable(enabled)
 
     # Persist to preferences
     from system.preferences import KEY_BUZZER_ENABLED

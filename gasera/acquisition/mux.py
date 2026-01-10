@@ -42,7 +42,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.enabled_count = sum(1 for s in self.cfg.include_channels if s > ChannelState.INACTIVE)
         if self.progress.enabled_count == 0:
             warn("[ENGINE] no channels enabled, skipping measurement")
-            services.buzzer.play("invalid")
+            services.buzzer_service.play("invalid")
             return False, "No channels enabled"
 
         self.cfg.motion_timeout = SWITCHING_SETTLE_TIME # const for mux switching

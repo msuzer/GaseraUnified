@@ -11,59 +11,30 @@ if VENDOR_DIR.exists():
 from system.log_utils import debug
 debug("starting service", version="1.0.0")
 
-from system.device.device_init import init_device, init_gpio_service, init_preferences_service
-init_device()
-init_gpio_service()
-init_preferences_service()
-
-try:
-    # Recover any incomplete log segments from previous runs
-    from system.log_recovery_service import recover_incomplete_segments
-    recover_incomplete_segments()
-except Exception as e:
-    from system.log_utils import warn
-    warn(f"[LOGGER] startup recovery failed: {e}")
-
-from system.device.device_init import init_buzzer_service, init_display_stack, init_device_status_service
-# initialize buzzer service after preferences are available
-init_buzzer_service()
-init_display_stack()
-init_device_status_service()
-
 # Use CLI arg if provided, else check simulator preference, else default
 from system import services
-from system.preferences import KEY_SIMULATOR_ENABLED
+from system.device.device_init import init_preferences_service
+init_preferences_service()
+
 DEFAULT_GASERA_IP = "192.168.0.100"
 if len(sys.argv) > 1 and sys.argv[1]:
     target_ip = sys.argv[1]
 else:
+    from system.preferences import KEY_SIMULATOR_ENABLED
     use_sim = services.preferences_service.get(KEY_SIMULATOR_ENABLED, False)
     target_ip = "127.0.0.1" if use_sim else DEFAULT_GASERA_IP
 
-from system.device.device_init import init_tcp_client, init_gasera_controller, start_device_status_poller, init_engine
-init_tcp_client(target_ip)
-init_gasera_controller()
-start_device_status_poller()
-init_engine()
+from system.device.device_init import init_all_services
+init_all_services(target_ip)
 
-from system.device.device_init import init_live_status_service, init_live_display_services, init_motion_status_service
-# instantiate live status service now that engine is available
-init_live_status_service()
-# perform runtime wiring: attach engine/display and start live updater
-init_live_display_services()
-
-# instantiate motion status service so `gasera.routes` sees it
-init_motion_status_service()
-
-from system.device.device_init import init_version_manager, start_display_thread
-# initialize version manager before importing routes that use it
-init_version_manager()
-start_display_thread()
-
-services.buzzer.play("power_on")
+services.buzzer_service.play("power_on")
 services.display_controller.show(
     services.display_adapter.info("App Startup", "Initializing...")
 )
+
+# Recover any incomplete log segments from previous runs
+from system.log_recovery_service import recover_incomplete_segments
+recover_incomplete_segments()
 
 from system.routes import system_bp
 from gasera.routes import gasera_bp
