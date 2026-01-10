@@ -22,12 +22,30 @@ def init_gpio_service():
 
 
 def init_buzzer_service():
+    from system.buzzer.buzzer_driver import BuzzerDriver
+    from system.buzzer.async_buzzer import AsyncBuzzer
     from system.buzzer.buzzer_facade import BuzzerFacade
+    from system.buzzer.buzzer_runtime import BuzzerRuntime
+    from system.gpio import pin_assignments as PINS
     import atexit
     
-    services.buzzer = BuzzerFacade()
-    atexit.register(services.buzzer.shutdown)
+    buzzer_driver = BuzzerDriver(
+        gpio_service=services.gpio_service,
+        pin=PINS.BUZZER_PIN,
+    )
 
+    buzzer_engine = AsyncBuzzer(driver=buzzer_driver)
+    
+    buzzer_runtime = BuzzerRuntime()
+
+    services.buzzer = BuzzerFacade(
+        engine=buzzer_engine,
+        runtime=buzzer_runtime,
+        preferences=services.preferences_service,
+    )
+    
+    atexit.register(buzzer_runtime.shutdown)
+    buzzer_runtime.start(buzzer_engine)
 
 def init_preferences_service():
     from system.preferences import Preferences

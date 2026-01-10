@@ -176,22 +176,13 @@ def set_buzzer_state() -> tuple[Response, int]:
         return jsonify({"ok": False, "error": "Missing 'enabled' field"}), 400
 
     enabled = bool(data["enabled"])
-    try:
-        # Live update
-        if hasattr(services.buzzer, "set_enabled"):
-            services.buzzer.set_enabled(enabled)
-        else:
-            services.buzzer.enabled = enabled
+    services.buzzer.enable(enabled)
 
-        # Persist to preferences
-        from system.preferences import KEY_BUZZER_ENABLED
-        services.preferences_service.update_from_dict({KEY_BUZZER_ENABLED: enabled}, write_disk=True)
-        debug(f"[BUZZER] {'enabled' if enabled else 'disabled'} via POST")
-        return jsonify({"ok": True, "enabled": enabled}), 200
-
-    except Exception as e:
-        error(f"[BUZZER] set_buzzer_state error: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+    # Persist to preferences
+    from system.preferences import KEY_BUZZER_ENABLED
+    services.preferences_service.update_from_dict({KEY_BUZZER_ENABLED: enabled}, write_disk=True)
+    debug(f"[BUZZER] {'enabled' if enabled else 'disabled'} via POST")
+    return jsonify({"ok": True, "enabled": enabled}), 200
 
 @system_bp.get("/profile")
 def get_selected_profile():

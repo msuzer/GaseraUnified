@@ -16,8 +16,6 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple, Union
-from system import services
-from system.gpio import pin_assignments as PINS
 from system.log_utils import debug, info
 
 # ----------------------------- Types -----------------------------------------
@@ -186,11 +184,13 @@ class AsyncBuzzer:
     def __init__(
         self,
         *,
+        driver,
         u: float = 0.1,
         patterns: Optional[Dict[str, Union[str, List[Pulse]]]] = None,
         min_silence_between_jobs: float = 0.05,
         rate_limits: Optional[Dict[str, float]] = None,  # name -> min_interval_sec
     ):
+        self._driver = driver
         self.u = u
         self.patterns = dict(DEFAULT_PATTERNS)
         if patterns:
@@ -207,21 +207,10 @@ class AsyncBuzzer:
         self._disabled = False   # 🚫 master mute flag
 
     # ------------- Lifecycle -------------
-    async def start(self):
-        if self._worker_task is None or self._worker_task.done():
-            self._worker_task = asyncio.create_task(self._worker(), name="buzzer_worker")
-
     async def shutdown(self):
         await self.stop_all()
-        if self._worker_task:
-            self._worker_task.cancel()
-            try:
-                await self._worker_task
-            except asyncio.CancelledError:
-                pass
-        # Failsafe off
         try:
-            services.gpio_service.reset(PINS.BUZZER_PIN)
+            self._driver.off()
         except Exception:
             pass
 
@@ -355,7 +344,7 @@ class AsyncBuzzer:
             pass
         # ensure buzzer off
         try:
-            services.gpio_service.reset(PINS.BUZZER_PIN)
+            self._driver.off()
         except Exception:
             pass
         await asyncio.sleep(0)
@@ -365,11 +354,9 @@ class AsyncBuzzer:
         self._disabled = True
         info("[BUZZER] disabled (muted)")
         try:
-            services.gpio_service.reset(PINS.BUZZER_PIN)          # ensure pin reset
+            self._driver.off()
         except Exception:
             pass
-        self._safe_async(self.stop_all())
-
 
     def enable(self):
         """Re-enable buzzer playback."""
@@ -423,7 +410,7 @@ class AsyncBuzzer:
                     await asyncio.sleep(self.min_silence_between_jobs)
                 # ensure off
                 try:
-                    services.gpio_service.reset(PINS.BUZZER_PIN)
+                    self._driver.off()
                 except Exception:
                     pass
             finally:
@@ -444,24 +431,17 @@ class AsyncBuzzer:
                     return True
                 # ON
                 try:
-                    services.gpio_service.set(PINS.BUZZER_PIN)
+                    self._driver.on()
                 except Exception:
                     # If GPIO raises, just attempt to continue off
                     pass
                 await asyncio.sleep(max(0.0, on_sec))
                 # OFF
                 try:
-                    services.gpio_service.reset(PINS.BUZZER_PIN)
+                    self._driver.off()
                 except Exception:
                     pass
                 await asyncio.sleep(max(0.0, off_sec))
             if canceled():
                 return True
         return False
-    
-    def _safe_async(self, coro):
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(coro)
-        except RuntimeError:
-            asyncio.run(coro)
