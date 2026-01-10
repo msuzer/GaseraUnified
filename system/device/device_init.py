@@ -184,10 +184,22 @@ def init_trigger():
 def init_engine():
     from gasera.motion.actions import MotionActions
     from gasera.acquisition.actions import EngineActions
+    from system.gpio import pin_assignments as PINS
 
     if DEVICE == Device.MUX:
         from gasera.motion.mux_motion import MuxMotion
-        motion = MuxMotion()
+        
+        motion = MuxMotion(
+            gpio_stages=[
+                (PINS.OC5_PIN, PINS.OC4_PIN),
+                (PINS.OC2_PIN, PINS.OC1_PIN),
+            ],
+            serial_ports=[
+                "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A90KFA3G-if00-port0",
+                "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9C7BUGI-if00-port0",
+            ],
+        )
+        
         services.motion_actions = {
             "0": MotionActions(motion, unit_id="0"),
             # Mux has only one motion unit
@@ -198,11 +210,19 @@ def init_engine():
         init_mux_buttons()
     elif DEVICE == Device.MOTOR:
         from gasera.motion.motor_motion import MotorMotion
-        motion = MotorMotion()
+        
+        motion = MotorMotion(
+            motor_pins={
+                "0": (PINS.MOTOR0_CW_PIN, PINS.MOTOR0_CCW_PIN),
+                "1": (PINS.MOTOR1_CW_PIN, PINS.MOTOR1_CCW_PIN),
+            }
+        )
+
         services.motion_actions = {
             "0": MotionActions(motion, unit_id="0"),
             "1": MotionActions(motion, unit_id="1"),
         }
+
         services.motion_service = motion
         from gasera.acquisition.motor import MotorAcquisitionEngine
         services.engine_service = MotorAcquisitionEngine(motion)

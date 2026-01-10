@@ -2,23 +2,33 @@
 from system.mux.cascaded_mux import CascadedMux
 from system.mux.mux_gpio import GPIOMux
 from system.mux.mux_vici_uma import ViciUMAMux
-from system.gpio import pin_assignments as PINS
 from system.log_utils import debug
 
 class MuxMotion:
-    def __init__(self):
-        serial_port1 = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A90KFA3G-if00-port0"
-        serial_port2 = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A9C7BUGI-if00-port0"
+    def __init__(
+        self,
+        gpio_stages: list[tuple[int, int]],
+        serial_ports: list[str] | None = None,
+    ):
+        """
+        gpio_stages:
+          [(home_pin, next_pin), (home_pin, next_pin)]
 
-        self.cmux_gpio = CascadedMux(
-            GPIOMux(home_pin=PINS.OC5_PIN, next_pin=PINS.OC4_PIN),
-            GPIOMux(home_pin=PINS.OC2_PIN, next_pin=PINS.OC1_PIN),
-        )
+        serial_ports:
+          [port1, port2] or None
+        """
 
-        self.cmux_serial = CascadedMux(
-            ViciUMAMux(serial_port1),
-            ViciUMAMux(serial_port2),
-        )
+        gpio_muxes = [
+            GPIOMux(home_pin=h, next_pin=n)
+            for h, n in gpio_stages
+        ]
+
+        self.cmux_gpio = CascadedMux(*gpio_muxes)
+
+        self.cmux_serial = None
+        if serial_ports:
+            serial_muxes = [ViciUMAMux(p) for p in serial_ports]
+            self.cmux_serial = CascadedMux(*serial_muxes)
 
         self._pos = 0
         self._state = {"status": "idle", "action": None, "position": self._pos}
