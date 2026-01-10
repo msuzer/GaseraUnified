@@ -14,7 +14,6 @@ import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Optional, Callable
-from enum import Enum
 
 from system import services
 from gasera.controller import TaskIDs

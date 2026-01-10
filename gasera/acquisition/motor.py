@@ -95,6 +95,8 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         self.progress.repeat_index = 0 # unbounded, increments after each cycle
         self.progress.repeat_total = 0 # repeat_total mirrors repeat_index
         
+        services.buzzer_service.play("armed")
+        
         while not self._stop_event.is_set():
             self._set_phase(Phase.ARMED)
             self._emit_task_events(TaskEvent.WAITING_FOR_TRIGGER)

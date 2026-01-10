@@ -12,8 +12,7 @@
 # - Pluggable unit 'u' (default 0.1s = 100 ms)
 
 from __future__ import annotations
-import asyncio
-import time
+import asyncio, time
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 from system.log_utils import debug, info
@@ -58,6 +57,7 @@ MORSE_MAP: Dict[str, str] = {
 DEFAULT_PATTERNS = {
     # Workflow
     "triggered": "A",          # .-  (distinct start cue)
+    "armed":     "R",          # .-. (ready)
     "started":   "E",          # .   (short)
     "paused":    "II",         # .. ..  (pair of doubles = repeating pause)
     "ended":     "S",          # ... (short triplet, completion)
