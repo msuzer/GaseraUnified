@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 
 from gasera.storage_utils import get_log_directory
-from system.log_utils import debug, info, warn
+from system.log_utils import debug, warn
 
 
 class MeasurementLogger:

@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, Response, stream_with_context, request, se
 from system import services
 from gasera import gas_info
 from gasera.sse.utils import SseDeltaTracker
-from system.log_utils import verbose, debug, info, warn, error
+from system.log_utils import verbose, debug, info, warn
 from .storage_utils import usb_mounted, get_log_directory, get_free_space, get_total_space, list_log_files, safe_join_in_logdir
 
 gasera_bp = Blueprint("gasera", __name__)
