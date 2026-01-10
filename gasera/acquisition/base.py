@@ -24,6 +24,7 @@ from gasera.measurement_logger import MeasurementLogger
 from gasera.acquisition.task_event import TaskEvent
 from gasera.acquisition.phase import Phase
 from gasera.acquisition.progress import Progress
+from gasera.acquisition.progress_view import ProgressView
 
 from system.preferences import (
     KEY_MEASUREMENT_DURATION,
@@ -208,7 +209,7 @@ class BaseAcquisitionEngine(ABC):
         ...
 
     @abstractmethod
-    def _finalize_engine_specifics(self) -> None:
+    def _finalize_engine_specifics(self, pv: ProgressView) -> None:
         """Finalize engine-specific summary numbers before the common finalization."""
         ...
 
@@ -234,14 +235,10 @@ class BaseAcquisitionEngine(ABC):
     def _finalize_run(self) -> None:
         # 1. Let subclass finalize its summary numbers
         self._task_timer.pause()
-        self._finalize_engine_specifics()
-
-        # 2. Final progress formatting
-        from gasera.acquisition.progress_view import ProgressView
         pv = ProgressView(self.progress)
-        self.progress.progress_str = pv.progress_done_label
+        self._finalize_engine_specifics(pv)
 
-        # 3. Resolve final state
+        # 2. Resolve final state
         if self._stop_event.is_set():
             self._stop_event.clear()
             self._set_phase(Phase.ABORTED)
@@ -254,12 +251,12 @@ class BaseAcquisitionEngine(ABC):
             services.buzzer_service.play("completed")
             info("[ENGINE] Measurement run complete")
 
-        # 4. Ensure Gasera is stopped
+        # 3. Ensure Gasera is stopped
         if not self.check_gasera_idle():
             if not self._stop_measurement():
                 warn("[ENGINE] Failed to stop Gasera during finalization")
 
-        # 5. Close logger
+        # 4. Close logger
         if self.logger:
             self.logger.close()
             self.logger = None

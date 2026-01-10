@@ -9,6 +9,7 @@ from gasera.acquisition.task_event import TaskEvent
 from gasera.engine_timer import EngineTimer
 from gasera.motion.iface import MotionInterface
 from gasera.acquisition.phase import Phase
+from gasera.acquisition.progress_view import ProgressView
 
 from gasera.acquisition.base import (
     BaseAcquisitionEngine,
@@ -217,8 +218,9 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
 
         return float(self.progress.total_steps) * per_actuator
 
-    def _finalize_engine_specifics(self) -> None:
+    def _finalize_engine_specifics(self, pv: ProgressView) -> None:
         cycle_estimate = self.estimate_total_time_seconds()
         self.progress.tt_seconds = self.progress.repeat_index * cycle_estimate
+        self.progress.progress_str = pv.motor_repeat_label
 
         info("[ENGINE] finalizing motor measurement task")

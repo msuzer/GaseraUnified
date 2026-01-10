@@ -46,6 +46,12 @@ class DisplayAdapter:
         elif screen == "armed":
             self._controller.update_content(self._armed())
 
+    def _is_mux_engine(self) -> bool:
+        return isinstance(self._engine, MuxAcquisitionEngine)
+    
+    def _is_motor_engine(self) -> bool:
+        return isinstance(self._engine, MotorAcquisitionEngine)
+
     # ------------------------------------------------------------------
     # Progress = content updates ONLY
     # ------------------------------------------------------------------
@@ -59,13 +65,11 @@ class DisplayAdapter:
         if not self._controller.current:
             return
 
-        if isinstance(self._engine, MotorAcquisitionEngine):
+        if self._is_motor_engine():
             if self._controller.current.screen != "running":
                 return
-
-        if isinstance(self._engine, MotorAcquisitionEngine):
             state = self._motor_content(p)
-        elif isinstance(self._engine, MuxAcquisitionEngine):
+        elif self._is_mux_engine():
             state = self._mux_content(p)
         else:
             return
@@ -135,8 +139,13 @@ class DisplayAdapter:
         if self._last_progress:
             pv = ProgressView(self._last_progress)
             if pv:
-                if pv.progress_done_label:
-                    lines.append(f"Done: {pv.progress_done_label}")
+                if self._is_mux_engine():
+                    if pv.mux_step_label:
+                        lines.append(f"Done: {pv.mux_step_label}")
+                elif self._is_motor_engine():
+                    if pv.motor_repeat_label:
+                        lines.append(f"Done: {pv.motor_repeat_label}")
+
                 if pv.duration_label:
                     lines.append(f"D: {pv.duration_label}")
 
@@ -157,8 +166,8 @@ class DisplayAdapter:
         pv = ProgressView(p)
         lines = []
         if pv:
-            if pv.channel_step_label:
-                lines.append(pv.channel_step_label)
+            if pv.motor_channel_step_label:
+                lines.append(pv.motor_channel_step_label)
             if pv.duration_label:
                 lines.append(f"D: {pv.duration_label}")
         
@@ -174,8 +183,8 @@ class DisplayAdapter:
         pv = ProgressView(p)
         lines = []
         if pv:
-            if pv.channel_step_label:
-                lines.append(pv.channel_step_label)
+            if pv.mux_channel_step_label:
+                lines.append(pv.mux_channel_step_label)
             if pv.duration_label:
                 lines.append(f"D: {pv.duration_label}")
         

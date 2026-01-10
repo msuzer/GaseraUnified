@@ -8,6 +8,7 @@ from system.log_utils import debug, info, warn
 from gasera.acquisition.task_event import TaskEvent
 from gasera.motion.iface import MotionInterface
 from gasera.acquisition.phase import Phase
+from gasera.acquisition.progress_view import ProgressView
 
 from gasera.acquisition.base import (
     BaseAcquisitionEngine,
@@ -167,5 +168,7 @@ class MuxAcquisitionEngine(BaseAcquisitionEngine):
         
         return float(self.progress.total_steps) * per_channel + float(GASERA_CMD_SETTLE_TIME)
 
-    def _finalize_engine_specifics(self) -> None:
+    def _finalize_engine_specifics(self, pv: ProgressView) -> None:
+        self.progress.progress_str = pv.mux_step_label
+
         info("[ENGINE] finalizing MUX measurement task")

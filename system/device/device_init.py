@@ -14,12 +14,10 @@ def init_device():
     from system.gpio import pin_assignments as PINS
     debug(f"[DEVICE] BUZZER_PIN resolved to {PINS.BUZZER_PIN}")
 
-
 def init_gpio_service():
     from system.gpio.gpio_control import GPIOController
     services.gpio_service = GPIOController()
     services.gpio_service.initialize_outputs()
-
 
 def init_buzzer_service():
     from system.buzzer.buzzer_driver import BuzzerDriver
@@ -51,7 +49,6 @@ def init_preferences_service():
     from system.preferences import Preferences
     services.preferences_service = Preferences()
 
-
 def init_display_stack():
     from system.display.display_driver import DisplayDriver
     from system.display.display_controller import DisplayController
@@ -60,7 +57,6 @@ def init_display_stack():
     driver = DisplayDriver()
     services.display_controller = DisplayController(driver)
     services.display_adapter = DisplayAdapter(services.display_controller)
-
 
 def init_device_status_service():
     from gasera.sse.device_status_service import DeviceStatusService
@@ -233,22 +229,15 @@ def init_live_status_service():
     if services.engine_service is not None:
         services.live_status_service.attach_engine(services.engine_service)
 
+    services.live_status_service.start_background_updater()
 
 def init_live_display_services():
-    if services.live_status_service is not None and services.engine_service is not None:
-        services.live_status_service.attach_engine(services.engine_service)
-
     if services.display_adapter is not None and services.engine_service is not None:
         services.display_adapter.attach_engine(services.engine_service)
-
-    if services.live_status_service is not None:
-        services.live_status_service.start_background_updater()
-
 
 def init_motion_status_service():
     from gasera.sse.motion_status_service import MotionStatusService
     services.motion_status_service = MotionStatusService()
-
 
 def init_version_manager():
     from system.version_manager import VersionManager
