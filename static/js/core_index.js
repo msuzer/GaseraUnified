@@ -39,6 +39,7 @@ window.switchToMotorMode = function () {
     showElement("motor-rover-card");        // motor+rover
 //  showElement("motion_control_card");     // actuator
     showElement("motor-timeout-block");     // actuator
+    showElement("motor-actuator-mode-block");
     showElement("btnRepeat");               // actuator
     showElement("btnFinish");               // actuator
 
@@ -52,6 +53,7 @@ window.switchToMuxMode = function () {
     hideElement("motor-rover-card");
     // hideElement("motion_control_card");
     hideElement("motor-timeout-block");
+    hideElement("motor-actuator-mode-block");
     hideElement("btnRepeat");
     hideElement("btnFinish");
 

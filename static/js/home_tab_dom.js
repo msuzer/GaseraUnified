@@ -43,3 +43,4 @@ const repeatInput = document.getElementById("cfgRepeat");
 const motorTimeoutInput = document.getElementById("cfgMotorTimeout");
 const buzzerToggle = document.getElementById("cfgBuzzer");
 const onlineModeToggle = document.getElementById("cfgOnlineMode");
+const motorActuatorModeInputs = document.querySelectorAll('input[name="cfgMotorActuatorMode"]');

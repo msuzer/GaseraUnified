@@ -8,6 +8,11 @@ class MeasurementStartMode(str, Enum):
     PER_TASK = "per_task"
     PER_CYCLE = "per_cycle"
 
+class MotorActuatorMode(str, Enum):
+    BOTH = "both"
+    MOTOR_0_ONLY = "motor_0_only"
+    MOTOR_1_ONLY = "motor_1_only"
+
 # --- Channel State Constants ---
 class ChannelState:
     """Channel state values for include_channels preference."""
@@ -26,7 +31,8 @@ VALID_PREF_KEYS = [
         "online_mode_enabled",
         "simulator_enabled",
         "motor_timeout",
-        "measurement_start_mode"
+        "measurement_start_mode",
+        "motor_actuator_mode"
     ]
 
 KEY_MEASUREMENT_DURATION    = VALID_PREF_KEYS[0]
@@ -39,6 +45,7 @@ KEY_ONLINE_MODE_ENABLED     = VALID_PREF_KEYS[6]
 KEY_SIMULATOR_ENABLED       = VALID_PREF_KEYS[7]
 KEY_MOTOR_TIMEOUT           = VALID_PREF_KEYS[8]
 KEY_MEASUREMENT_START_MODE  = VALID_PREF_KEYS[9]
+KEY_MOTOR_ACTUATOR_MODE     = VALID_PREF_KEYS[10]
 
 DEFAULT_INCLUDE_COUNT = 31  # default number of channels to include
 
@@ -52,6 +59,7 @@ DEFAULTS = {
     KEY_ONLINE_MODE_ENABLED     : True,
     KEY_SIMULATOR_ENABLED       : True,
     KEY_MEASUREMENT_START_MODE  : MeasurementStartMode.PER_CYCLE,
+    KEY_MOTOR_ACTUATOR_MODE     : MotorActuatorMode.BOTH,
     KEY_INCLUDE_CHANNELS        : [True] * DEFAULT_INCLUDE_COUNT,
     KEY_TRACK_VISIBILITY        : {
         "Acetaldehyde (CH\u2083CHO)": True,

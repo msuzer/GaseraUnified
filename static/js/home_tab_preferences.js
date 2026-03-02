@@ -8,11 +8,14 @@
 // Collect Preferences
 // ============================================================
 window.collectPrefsData = function () {
+  const selectedMotorActuatorMode = document.querySelector('input[name="cfgMotorActuatorMode"]:checked')?.value ?? "both";
+
   return {
     measurement_duration: +measureInput.value,
     pause_seconds: +pauseInput.value,
     repeat_count: +repeatInput.value,
     motor_timeout: +motorTimeoutInput.value,
+    motor_actuator_mode: selectedMotorActuatorMode,
     include_channels: window.getJarMask?.() ?? [],
     online_mode_enabled: onlineModeToggle?.checked ?? true,
   };
@@ -34,6 +37,13 @@ function loadPreferences() {
         onlineModeToggle.checked = p.online_mode_enabled ?? true;
       }
 
+      const motorActuatorMode = p.motor_actuator_mode ?? "both";
+      const selectedMotorRadio = document.querySelector(`input[name="cfgMotorActuatorMode"][value="${motorActuatorMode}"]`)
+        || document.querySelector('input[name="cfgMotorActuatorMode"][value="both"]');
+      if (selectedMotorRadio) {
+        selectedMotorRadio.checked = true;
+      }
+
       window.applyJarMask?.(p.include_channels ?? []);
     })
     .catch(e => console.warn("[UI] Pref load failed:", e));
@@ -47,6 +57,7 @@ window.loadPreferences = loadPreferences;
 // ============================================================
 window.lockPreferenceInputs = function (locked) {
   const inputs = [measureInput, pauseInput, motorTimeoutInput, repeatInput, onlineModeToggle];
+  const motorModeRadios = Array.from(motorActuatorModeInputs || []);
   const tooltip = "Disabled during measurement";
 
   inputs.forEach(input => {
@@ -57,6 +68,15 @@ window.lockPreferenceInputs = function (locked) {
       } else {
         input.removeAttribute("title");
       }
+    }
+  });
+
+  motorModeRadios.forEach(radio => {
+    radio.disabled = locked;
+    if (locked) {
+      radio.title = tooltip;
+    } else {
+      radio.removeAttribute("title");
     }
   });
 };

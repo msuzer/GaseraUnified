@@ -79,6 +79,7 @@ Fields:
 - simulator_enabled: boolean.
 - online_mode_enabled: boolean (save-on-device vs online semantics).
 - measurement_start_mode: "per_cycle" or "per_task".
+- motor_actuator_mode: "both", "motor_0_only", or "motor_1_only" (motor profile acquisition loop selector).
 - include_channels: 31-length array of 0/1 flags.
 - track_visibility: map of component display defaults on charts.
 

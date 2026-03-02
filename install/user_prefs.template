@@ -7,6 +7,7 @@
   "simulator_enabled": true,
   "online_mode_enabled": true,
   "measurement_start_mode": "per_cycle",
+  "motor_actuator_mode": "both",
   "include_channels": [
     1,
     1,

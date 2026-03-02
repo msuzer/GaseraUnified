@@ -16,6 +16,7 @@ from gasera.acquisition.base import (
     MeasurementStartMode,
     GASERA_CMD_SETTLE_TIME
 )
+from system.preferences import KEY_MOTOR_ACTUATOR_MODE, MotorActuatorMode
 
 DEFAULT_ACTUATOR_IDS = ("0", "1")    # motor: logical channels 0/1 for UI
 
@@ -52,7 +53,19 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
         
         info(f"[ENGINE] Starting Motor Engine with Mode: {self.cfg.measurement_start_mode}")
 
-        self.cfg.actuator_ids=DEFAULT_ACTUATOR_IDS
+        raw_actuator_mode = services.preferences_service.get(KEY_MOTOR_ACTUATOR_MODE, MotorActuatorMode.BOTH)
+        try:
+            actuator_mode = MotorActuatorMode(raw_actuator_mode)
+        except Exception:
+            warn(f"[ENGINE] Invalid motor_actuator_mode '{raw_actuator_mode}', defaulting to both")
+            actuator_mode = MotorActuatorMode.BOTH
+
+        if actuator_mode == MotorActuatorMode.MOTOR_0_ONLY:
+            self.cfg.actuator_ids = ("0",)
+        elif actuator_mode == MotorActuatorMode.MOTOR_1_ONLY:
+            self.cfg.actuator_ids = ("1",)
+        else:
+            self.cfg.actuator_ids = DEFAULT_ACTUATOR_IDS
         
         # UI contract fields (unbounded run)
         self.progress.enabled_count = len(self.cfg.actuator_ids)
@@ -139,9 +152,14 @@ class MotorAcquisitionEngine(BaseAcquisitionEngine):
                 if self._stop_event.is_set():
                     return False
 
-                # UI channel mapping
-                self.progress.current_channel = idx
-                self.progress.next_channel = (idx + 1) if (idx + 1 < len(self.cfg.actuator_ids)) else None
+                # UI channel mapping (physical actuator side)
+                self.progress.current_channel = int(actuator_id)
+
+                if idx + 1 < len(self.cfg.actuator_ids):
+                    self.progress.next_channel = int(self.cfg.actuator_ids[idx + 1])
+                else:
+                    self.progress.next_channel = None
+
                 self._emit_progress_updates()
 
                 if not self._run_actuator_sequence(actuator_id):
