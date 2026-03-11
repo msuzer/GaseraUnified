@@ -97,24 +97,12 @@
                             min="2" max="60" step="1">
                     </div>
                     <div class="input-group-sm d-flex flex-column input-block d-none" id="motor-actuator-mode-block">
-                        <label class="form-label mb-1 small">Actuator Selection</label>
-                        <div class="d-flex gap-3 small">
-                            <div class="form-check m-0">
-                                <input class="form-check-input" type="radio" name="cfgMotorActuatorMode"
-                                    id="cfgMotorActuatorBoth" value="both" checked>
-                                <label class="form-check-label" for="cfgMotorActuatorBoth">Both</label>
-                            </div>
-                            <div class="form-check m-0">
-                                <input class="form-check-input" type="radio" name="cfgMotorActuatorMode"
-                                    id="cfgMotorActuator0" value="motor_0_only">
-                                <label class="form-check-label" for="cfgMotorActuator0">Motor ID 0</label>
-                            </div>
-                            <div class="form-check m-0">
-                                <input class="form-check-input" type="radio" name="cfgMotorActuatorMode"
-                                    id="cfgMotorActuator1" value="motor_1_only">
-                                <label class="form-check-label" for="cfgMotorActuator1">Motor ID 1</label>
-                            </div>
-                        </div>
+                        <label class="form-label mb-0 small">Actuator Selection</label>
+                        <select id="cfgMotorActuatorMode" class="form-select form-select-sm">
+                            <option value="both">Both</option>
+                            <option value="motor_0_only">Motor ID 0</option>
+                            <option value="motor_1_only">Motor ID 1</option>
+                        </select>
                     </div>
                 </div>
                 <div class="col-12 col-md-auto toggles-group d-flex flex-column gap-2">

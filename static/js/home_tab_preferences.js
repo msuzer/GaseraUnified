@@ -8,7 +8,7 @@
 // Collect Preferences
 // ============================================================
 window.collectPrefsData = function () {
-  const selectedMotorActuatorMode = document.querySelector('input[name="cfgMotorActuatorMode"]:checked')?.value ?? "both";
+  const selectedMotorActuatorMode = document.getElementById("cfgMotorActuatorMode")?.value ?? "both";
 
   return {
     measurement_duration: +measureInput.value,
@@ -38,10 +38,9 @@ function loadPreferences() {
       }
 
       const motorActuatorMode = p.motor_actuator_mode ?? "both";
-      const selectedMotorRadio = document.querySelector(`input[name="cfgMotorActuatorMode"][value="${motorActuatorMode}"]`)
-        || document.querySelector('input[name="cfgMotorActuatorMode"][value="both"]');
-      if (selectedMotorRadio) {
-        selectedMotorRadio.checked = true;
+      const motorActuatorSelect = document.getElementById("cfgMotorActuatorMode");
+      if (motorActuatorSelect) {
+        motorActuatorSelect.value = motorActuatorMode;
       }
 
       window.applyJarMask?.(p.include_channels ?? []);
