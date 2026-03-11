@@ -1,7 +1,7 @@
 from pathlib import Path
 import json, requests, time
 
-REPO = "msuzer/GaseraMux"
+REPO = "msuzer/GaseraUnified"
 BRANCH = "main"
 CACHE_DIR = Path("/opt/GaseraMux/cache")
 CACHE_DIR.mkdir(exist_ok=True)
