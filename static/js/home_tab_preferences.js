@@ -8,14 +8,12 @@
 // Collect Preferences
 // ============================================================
 window.collectPrefsData = function () {
-  const selectedMotorActuatorMode = document.getElementById("cfgMotorActuatorMode")?.value ?? "both";
-
   return {
     measurement_duration: +measureInput.value,
     pause_seconds: +pauseInput.value,
     repeat_count: +repeatInput.value,
     motor_timeout: +motorTimeoutInput.value,
-    motor_actuator_mode: selectedMotorActuatorMode,
+    motor_actuator_mode: motorActuatorModeSelect?.value ?? "both",
     include_channels: window.getJarMask?.() ?? [],
     online_mode_enabled: onlineModeToggle?.checked ?? true,
   };
@@ -55,8 +53,7 @@ window.loadPreferences = loadPreferences;
 // Preference Input Locking
 // ============================================================
 window.lockPreferenceInputs = function (locked) {
-  const inputs = [measureInput, pauseInput, motorTimeoutInput, repeatInput, onlineModeToggle];
-  const motorModeRadios = Array.from(motorActuatorModeInputs || []);
+  const inputs = [measureInput, pauseInput, motorTimeoutInput, repeatInput, onlineModeToggle, motorActuatorModeSelect];
   const tooltip = "Disabled during measurement";
 
   inputs.forEach(input => {
@@ -67,15 +64,6 @@ window.lockPreferenceInputs = function (locked) {
       } else {
         input.removeAttribute("title");
       }
-    }
-  });
-
-  motorModeRadios.forEach(radio => {
-    radio.disabled = locked;
-    if (locked) {
-      radio.title = tooltip;
-    } else {
-      radio.removeAttribute("title");
     }
   });
 };
